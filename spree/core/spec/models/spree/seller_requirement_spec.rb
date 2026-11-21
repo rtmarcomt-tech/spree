@@ -147,17 +147,32 @@ RSpec.describe Spree::SellerRequirement, type: :model do
 
       described_class.provision_defaults(store)
 
-      expect(store.seller_requirements.reload.map(&:class)).to eq(
-        [
-          Spree::SellerRequirements::AcceptTerms,
-          Spree::SellerRequirements::CompleteProfile,
-          Spree::SellerRequirements::BillingAddress,
-          Spree::SellerRequirements::ReturnsAddress,
-          Spree::SellerRequirements::DeliveryMethod,
-          Spree::SellerRequirements::PackageType,
-          Spree::SellerRequirements::MinimumProducts
-        ]
+      requirements = store.seller_requirements.reload
+
+      expect(requirements.map(&:class)).to include(
+        Spree::SellerRequirements::AcceptTerms,
+        Spree::SellerRequirements::CompleteProfile,
+        Spree::SellerRequirements::BillingAddress,
+        Spree::SellerRequirements::MinimumProducts,
+        Spree::SellerRequirements::Document,
+        Spree::SellerRequirements::Attestation
       )
+      expect(requirements.map(&:class)).not_to include(
+        Spree::SellerRequirements::ReturnsAddress,
+        Spree::SellerRequirements::DeliveryMethod,
+        Spree::SellerRequirements::PackageType
+      )
+
+      required_review_items = requirements.select do |requirement|
+        Spree::SellerRequirement::DEFAULT_REVIEW_REQUIREMENTS.any? do |attributes|
+          attributes[:type] == requirement.type && attributes[:name] == requirement.name
+        end
+      end
+
+      expect(required_review_items.size).to eq(4)
+      expect(required_review_items).to all(have_attributes(required: true, active: true))
+      expect(required_review_items.find { |item| item.name == 'Identity and age verification' }.class).
+        to eq(Spree::SellerRequirements::Document)
     end
 
     it 'does not duplicate what the store already has' do

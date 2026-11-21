@@ -42,6 +42,7 @@ module Spree
           # @return [Spree::DigitalDelivery, nil]
           def authorized_delivery
             return unless @resource.authorizable?
+            return unless @resource.deliverable_version?
 
             window = signed_url_window
             return if window <= 0

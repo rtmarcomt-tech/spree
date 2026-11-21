@@ -75,6 +75,9 @@ module Spree
     # without also stopping customer receipts.
     preference :send_seller_transactional_emails, :boolean, default: true
     # Marketplace preferences
+    # Restrict the public catalogue to approved creator-owned digital media.
+    # Disabled by default so existing Spree stores retain their normal catalogue.
+    preference :digital_creator_marketplace_enabled, :boolean, default: false
     #
     # VAT on the commission itself, as a fraction, when neither the rate nor
     # the tax provider names one. Zero by default: a marketplace outside the EU
@@ -125,6 +128,10 @@ module Spree
     # below it the balance carries to the next period. Zero pays whatever is
     # owed, which is right for a provider that moves money for free.
     preference :default_minimum_payout_amount, :money, default: 0
+    # A nil value deliberately blocks new creator payouts until the operator
+    # chooses a hold period; no legal or commercial duration is assumed.
+    preference :creator_earnings_hold_days, :integer, nullable: true
+    validates :preferred_creator_earnings_hold_days, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
     # Checkout preferences
     # Store-level fallback for the channel-owned `guest_checkout` preference
     # (see Spree::Channel::Gating). Retained so existing accessors keep working.
@@ -214,7 +221,7 @@ module Spree
                         :show_products_without_price, :disable_sku_validation, :order_routing_strategy,
                         :pricing_provider, :inventory_provider, :pricing_provider_failure_policy,
                         :inventory_provider_failure_policy, :payout_provider, :default_payouts_schedule_interval,
-                        :default_minimum_payout_amount, :auto_approve_sellers, :auto_approve_seller_products,
+                        :default_minimum_payout_amount, :creator_earnings_hold_days, :auto_approve_sellers, :auto_approve_seller_products,
                         :seller_digital_assets_enabled, :seller_digital_asset_content_types,
                         :review_seller_digital_asset_changes, :send_seller_transactional_emails, :default_commission_tax_rate, :document_number_format,
                         :order_number_prefix, :order_number_suffix, :order_number_sequence_start,

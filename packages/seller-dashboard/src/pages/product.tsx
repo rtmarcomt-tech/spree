@@ -105,6 +105,7 @@ export function ProductPage({ mode }: { mode: 'new' | 'edit' }) {
   // Whether this marketplace lets sellers upload files, and of which types,
   // comes with the account the panel already holds.
   const marketplace = useAccount().data?.store
+  const digitalMarketplace = !!marketplace?.digital_creator_marketplace_enabled
 
   // Reset once the record arrives, so the inputs show what was last saved
   // rather than the blank defaults the form mounted with.
@@ -162,7 +163,7 @@ export function ProductPage({ mode }: { mode: 'new' | 'edit' }) {
           focal_point_y: item.focal_point_y ?? undefined,
           variant_ids: item.variant_ids,
         })),
-        variants: (values.variants ?? []).map((variant, index) =>
+        variants: (values.variants ?? []).slice(0, digitalMarketplace ? 1 : undefined).map((variant, index) =>
           variantToWirePayload(variant, index, 'seller.product'),
         ) as ProductCreateParams['variants'],
       }
@@ -267,21 +268,21 @@ export function ProductPage({ mode }: { mode: 'new' | 'edit' }) {
                 form={form}
                 formKey="seller.product"
               />
-              <VariantsCard form={form} formKey="seller.product" seedFromType={mode === 'new'} />
+              {!digitalMarketplace && <VariantsCard form={form} formKey="seller.product" seedFromType={mode === 'new'} />}
               <PricesCard
                 form={form}
                 productName={product?.name ?? ''}
                 currencies={profile?.supported_currencies}
                 defaultCurrency={profile?.default_currency}
               />
-              <InventoryCard form={form} />
+              {!digitalMarketplace && <InventoryCard form={form} />}
               <DigitalAssetsCard
                 productId={productId}
                 variants={assignableVariants}
                 readOnly={!marketplace?.seller_digital_assets_enabled}
                 accept={marketplace?.seller_digital_asset_content_types}
                 notice={
-                  product?.status === 'active' && marketplace?.review_seller_digital_asset_changes
+                  !digitalMarketplace && product?.status === 'active' && marketplace?.review_seller_digital_asset_changes
                     ? t('products.digital_files_review_notice')
                     : undefined
                 }
@@ -294,13 +295,14 @@ export function ProductPage({ mode }: { mode: 'new' | 'edit' }) {
               {productId && product && (
                 <ProductStatusCard
                   product={product}
+                  digitalMarketplace={digitalMarketplace}
                   onDone={() => {
                     void queryClient.invalidateQueries({ queryKey: productKey })
                     void queryClient.invalidateQueries({ queryKey: ['seller-products'] })
                   }}
                 />
               )}
-              <CategorizationCard form={form} />
+              {!digitalMarketplace && <CategorizationCard form={form} />}
               <Slot name="seller.product.form_sidebar" context={{ product, mode }} />
             </>
           }

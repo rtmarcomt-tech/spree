@@ -85,6 +85,42 @@ RSpec.describe Spree::SellerTransfer, type: :model do
     end
   end
 
+  describe 'financial holds' do
+    it 'keeps multiple independent active holds on one earning' do
+      earning = create(:seller_transfer, seller: seller, order: order)
+      first = create(:seller_transfer_hold, store: store, seller: seller, seller_transfer: earning,
+                                            kind: 'dispute', reason: 'Payment dispute')
+      second = create(:seller_transfer_hold, store: store, seller: seller, seller_transfer: earning,
+                                             kind: 'compliance', reason: 'Compliance review')
+
+      expect(earning.holds.blocking).to contain_exactly(first, second)
+    end
+
+    it 'releases a hold with an auditable administrator and timestamp' do
+      earning = create(:seller_transfer, seller: seller, order: order)
+      hold = create(:seller_transfer_hold, store: store, seller: seller, seller_transfer: earning)
+      admin = create(:admin_user)
+
+      hold.release!(admin_user: admin, note: 'PayPal case closed')
+
+      expect(hold.reload).to be_released
+      expect(hold.released_by_admin_user).to eq(admin)
+      expect(hold.released_at).to be_present
+      expect(hold.metadata['release_note']).to eq('PayPal case closed')
+    end
+
+    it 'rejects a hold whose store or seller differs from its transfer' do
+      earning = create(:seller_transfer, seller: seller, order: order)
+      other_seller = create(:seller, :approved, store: store)
+
+      hold = build(:seller_transfer_hold, store: store, seller: other_seller, seller_transfer: earning,
+                                          kind: 'manual_review', reason: 'Review')
+
+      expect(hold).not_to be_valid
+      expect(hold.errors[:seller_transfer]).to be_present
+    end
+  end
+
   describe '#reversible_amount' do
     let(:earning) { create(:seller_transfer, :completed, seller: seller, order: order, amount: 40) }
 

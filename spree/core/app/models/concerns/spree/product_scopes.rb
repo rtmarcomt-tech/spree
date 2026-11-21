@@ -308,6 +308,62 @@ module Spree
         available(nil, currency)
       end
 
+      # Products safe to expose in the digital creator marketplace. This is
+      # deliberately a relation-level predicate so IDs, slugs, pagination and
+      # search-provider results all share the same seller/media eligibility.
+      # A product must have at least one digital asset; every attached asset
+      # must have a current, published revision.
+      def self.digital_marketplace_visible
+        sellable_sellers = Spree::Seller.sellable.select(:id)
+        latest_published_versions = Spree::DigitalAssetVersion.
+          where(status: 'published').
+          where(<<~SQL.squish).
+            spree_digital_asset_versions.version_number = (
+              SELECT MAX(latest_versions.version_number)
+              FROM spree_digital_asset_versions latest_versions
+              WHERE latest_versions.digital_asset_id = spree_digital_asset_versions.digital_asset_id
+            )
+          SQL
+          select(:id)
+
+        assets = Spree::DigitalAsset.arel_table
+        versions = Spree::DigitalAssetVersion.arel_table
+        attachments = ActiveStorage::Attachment.quoted_table_name
+        published_asset_ids = Spree::DigitalAsset.
+          joins(:versions).
+          where(Spree::DigitalAssetVersion.table_name => { id: latest_published_versions }).
+          joins(<<~SQL.squish).
+            INNER JOIN #{attachments} current_asset_files
+              ON current_asset_files.record_type = 'Spree::DigitalAsset'
+             AND current_asset_files.record_id = #{assets.name}.id
+             AND current_asset_files.name = 'attachment'
+            INNER JOIN #{attachments} published_version_files
+              ON published_version_files.record_type = 'Spree::DigitalAssetVersion'
+             AND published_version_files.record_id = #{versions.name}.id
+             AND published_version_files.name = 'attachment'
+             AND published_version_files.blob_id = current_asset_files.blob_id
+          SQL
+          select("#{assets.name}.id")
+
+        seller_ids_sql = sellable_sellers.to_sql
+        joins(:digital_assets).
+          where(<<~SQL.squish).
+            (#{table_name}.seller_id IS NULL OR #{table_name}.seller_id IN (#{seller_ids_sql}))
+            AND NOT EXISTS (
+              SELECT 1 FROM #{Spree::Variant.table_name} seller_variants
+              WHERE seller_variants.product_id = #{table_name}.id
+                AND seller_variants.deleted_at IS NULL
+                AND seller_variants.seller_id IS NOT NULL
+                AND seller_variants.seller_id NOT IN (#{seller_ids_sql})
+            )
+          SQL
+          where(Spree::DigitalAsset.table_name => { id: published_asset_ids }).
+          where.not(id: joins(:digital_assets).
+            where.not(Spree::DigitalAsset.table_name => { id: published_asset_ids }).
+            select(:id)).
+          distinct
+      end
+
       # Orders products by best-selling metrics (+units_sold_count+, +revenue+)
       # tracked directly on +spree_products+. Uses Arel::Nodes::As so that
       # ORDER BY expressions appear in SELECT and work with DISTINCT (same

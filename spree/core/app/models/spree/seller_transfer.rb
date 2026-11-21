@@ -44,6 +44,8 @@ module Spree
     belongs_to :refund, class_name: 'Spree::Refund', optional: true
     has_many :reversals, class_name: 'Spree::SellerTransfer', foreign_key: :reversed_from_id,
                          inverse_of: :reversed_from, dependent: :nullify
+    has_many :holds, class_name: 'Spree::SellerTransferHold', dependent: :restrict_with_error,
+                     inverse_of: :seller_transfer
 
     #
     # Validations

@@ -6,7 +6,7 @@ RSpec.describe Spree::SellerPayouts::Sweep do
 
   def earn(amount, currency: 'USD', status: 'completed', payout: nil)
     create(:seller_transfer, seller: seller, currency: currency, amount: amount, status: status, payout: payout,
-                             order: create(:order, store: store, seller: seller, currency: currency))
+                             release_at: Time.current, order: create(:order, store: store, seller: seller, currency: currency))
   end
 
   describe 'what it settles' do
@@ -28,6 +28,23 @@ RSpec.describe Spree::SellerPayouts::Sweep do
       payout = described_class.call(seller: seller, currency: 'USD').value
 
       expect(payout.transfers).to contain_exactly(first, second)
+    end
+
+    it 'does not pay an earning whose release time has not arrived' do
+      earn(40, status: 'completed').update!(release_at: 1.day.from_now)
+
+      expect { described_class.call(seller: seller, currency: 'USD') }.
+        not_to change { Spree::SellerPayout.count }
+    end
+
+    it 'does not pay an earning with an active financial hold' do
+      earning = earn(40)
+      create(:seller_transfer_hold, store: store, seller: seller, seller_transfer: earning,
+                                   kind: 'dispute', reason: 'External payment dispute opened')
+
+      expect { described_class.call(seller: seller, currency: 'USD') }.
+        not_to change { Spree::SellerPayout.count }
+      expect(earning.reload.payout_id).to be_nil
     end
 
     it 'leaves earnings in another currency for their own settlement' do

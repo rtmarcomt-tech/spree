@@ -395,6 +395,15 @@ Spree::Core::Engine.add_routes do
           end
         end
 
+        # Creator media is published immediately. Admins may remove content
+        # after publication when it breaches marketplace rules.
+        resources :digital_asset_versions, only: [:index, :show] do
+          member do
+            get :preview
+            patch :remove
+          end
+        end
+
         # Digital download grants — read and reset only; they are created by
         # order completion, never by hand.
         resources :digital_links, only: [:index, :show] do

@@ -49,7 +49,7 @@ test.describe('seller packaging', () => {
   // trips before this spec's own subject starts.
   test.slow()
 
-  test('a seller records the box they ship in and the requirement completes', async ({
+  test('a digital-only seller is not asked for physical shipping details', async ({
     page,
     browser,
   }) => {
@@ -71,52 +71,10 @@ test.describe('seller packaging', () => {
         })
       }
 
-      // The shipping-box requirement starts outstanding: a new seller has
-      // recorded nothing to ship in.
+      // Digital-only onboarding deliberately omits physical shipping requirements.
       await goToSetup()
-      await expect(sellerPage.getByText(/shipping box/i).first()).toBeVisible({ timeout: 20_000 })
-
-      // Recording it: the page is reachable from settings, and a fully
-      // measured default box is what the requirement asks for.
-      await sellerPage
-        .getByRole('link', { name: /^settings$/i })
-        .first()
-        .click()
-      await sellerPage
-        .getByRole('link', { name: /package types/i })
-        .first()
-        .click()
-      await expect(sellerPage.getByRole('button', { name: /add package type/i })).toBeVisible({
-        timeout: 20_000,
-      })
-
-      await sellerPage.getByRole('button', { name: /add package type/i }).click()
-      await sellerPage.locator('#package-type-name').fill(boxName)
-      await sellerPage.locator('#package-type-length').fill('30')
-      await sellerPage.locator('#package-type-width').fill('20')
-      await sellerPage.locator('#package-type-height').fill('15')
-      await sellerPage.locator('#package-type-weight').fill('0.4')
-      // A Switch renders as role=switch; the id is on the control, not a
-      // clickable input.
-      await sellerPage.getByRole('switch', { name: /default box/i }).click()
-      await sellerPage.getByRole('button', { name: /^save$/i }).click()
-
-      // It is the seller's own row afterwards, marked as their default.
-      await expect(sellerPage.getByText(boxName)).toBeVisible({ timeout: 20_000 })
-
-      // Which is what turns the requirement complete — the same evaluator the
-      // operator reads, so this is the whole point of the feature.
-      //
-      // Reloaded rather than navigated: the checklist was fetched before the
-      // box existed, and the packaging page has no reason to invalidate
-      // another page's query, so clicking back to it would assert against the
-      // cached answer.
-      await goToSetup()
-      await sellerPage.reload()
-      await expect(sellerPage.getByRole('heading', { name: /^setup$/i })).toBeVisible({
-        timeout: 20_000,
-      })
-      await expect(sellerPage.getByText(/1 of 7 done/i)).toBeVisible({ timeout: 20_000 })
+      await expect(sellerPage.getByRole('button', { name: /shipping box/i })).toHaveCount(0)
+      await expect(sellerPage.getByRole('button', { name: /package type/i })).toHaveCount(0)
     } finally {
       await context.close()
     }

@@ -55,14 +55,15 @@ module Spree
       def enforce_seller_rules
         return if seller.nil?
 
-        refuse(:digital_assets_sellers_disabled) unless store.preferred_seller_digital_assets_enabled
+        marketplace = store.preferred_digital_creator_marketplace_enabled
+        refuse(:digital_assets_sellers_disabled) unless store.preferred_seller_digital_assets_enabled || marketplace
         return if blob.nil?
 
         # Identifying reads the file's own signature where it has one, so a
         # renamed executable cannot pass as a PDF; a format with no signature
         # (plain text) keeps the type the client declared.
         blob.identify_without_saving
-        return if content_type_accepted?(blob.content_type)
+        return if marketplace ? Spree::DigitalAsset::CREATOR_MARKETPLACE_CONTENT_TYPES.include?(blob.content_type) : content_type_accepted?(blob.content_type)
 
         refuse(:digital_assets_content_type_not_accepted, content_type: blob.content_type)
       end
@@ -74,16 +75,24 @@ module Spree
       end
 
       def attach_upload
-        digital_asset.attachment.attach(blob) if blob
+        return unless blob
+
+        # Retain the previous attachment on its immutable version before the
+        # asset points at the replacement. Active Storage callbacks can defer
+        # the attachment change until the asset save completes.
+        @previous_attachment_blob = digital_asset.attachment.blob if digital_asset.persisted?
+        digital_asset.attachment.attach(blob)
       end
 
       def save_digital_asset
         failure(digital_asset) unless digital_asset.save
+        record_uploaded_version if blob
       end
 
       # A seller changing what an approved listing delivers reopens its review.
       # The operator's own change does not: they are the reviewer.
       def reopen_review
+        return if store.preferred_digital_creator_marketplace_enabled
         return if seller.nil? || blob.nil? || !product.active?
         return unless store.preferred_review_seller_digital_asset_changes
         return if store.preferred_auto_approve_seller_products
@@ -93,6 +102,48 @@ module Spree
 
         digital_asset.errors.add(:base, result.error.to_s)
         failure(digital_asset)
+      end
+
+      # Keep a second private attachment to the exact uploaded blob. Replacing
+      # DigitalAsset#attachment later therefore cannot change what an earlier
+      # buyer entitlement or a moderator's decision refers to.
+      def record_uploaded_version
+        digital_asset.with_lock do
+          versions = Spree::DigitalAssetVersion.where(digital_asset_id: digital_asset.id)
+          latest = versions.latest_first.first
+
+          # Assets created before version history was introduced have no
+          # revision row. On their first replacement, preserve the bytes that
+          # were previously delivered before recording the new upload.
+          if @previous_attachment_blob && latest.nil?
+            latest = digital_asset.versions.build(
+              store: store,
+              version_number: 1,
+              checksum: @previous_attachment_blob.checksum,
+              content_type: @previous_attachment_blob.content_type,
+              byte_size: @previous_attachment_blob.byte_size,
+              status: 'published',
+              submitted_at: Time.current
+            )
+            latest.attachment.attach(@previous_attachment_blob)
+            latest.save!
+          elsif @previous_attachment_blob && latest && !latest.attachment.attached?
+            latest.attachment.attach(@previous_attachment_blob)
+          end
+
+          number = versions.maximum(:version_number).to_i + 1
+          version = digital_asset.versions.build(
+            store: store,
+            version_number: number,
+            checksum: blob.checksum,
+            content_type: blob.content_type,
+            byte_size: blob.byte_size,
+            status: 'published',
+            submitted_at: Time.current
+          )
+          version.attachment.attach(blob)
+          version.save!
+        end
       end
 
       def store

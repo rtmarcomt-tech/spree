@@ -2979,7 +2979,8 @@
       "suppliers": "Suppliers",
       "loyalty": "Loyalty",
       "store_credits": "Store Credits",
-      "commission_rates": "Commission rates"
+      "commission_rates": "Commission rates",
+      "creator_media_review": "Content review"
     },
     "option_types": {
       "columns": {

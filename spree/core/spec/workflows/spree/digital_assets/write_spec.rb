@@ -13,7 +13,7 @@ RSpec.describe 'Spree::DigitalAssets write workflows' do
 
   def private_blob(filename = 'manual.pdf')
     ActiveStorage::Blob.create_and_upload!(
-      io: File.open(Spree::Core::Engine.root.join('spec', 'fixtures', 'thinking-cat.jpg')),
+      io: StringIO.new("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF"),
       filename: filename,
       content_type: 'application/pdf',
       service_name: Spree.private_storage_service_name
@@ -28,6 +28,9 @@ RSpec.describe 'Spree::DigitalAssets write workflows' do
       expect(result.value.variant).to eq(product.default_variant)
       expect(result.value.filename).to eq('manual.pdf')
       expect(result.value.authorized_clicks).to eq(3)
+      version = result.value.versions.sole
+      expect(version).to have_attributes(version_number: 1, status: 'published', content_type: 'application/pdf')
+      expect(version.attachment.blob).to eq(result.value.attachment.blob)
     end
 
     it "resolves the variant through the product's own variants" do
@@ -100,6 +103,10 @@ RSpec.describe 'Spree::DigitalAssets write workflows' do
       expect(result).to be_success
       expect(seen).to eq([%w[authorized_days], 'manual.pdf'])
       expect(digital_asset.reload.filename).to eq('manual.pdf')
+      versions = digital_asset.versions.includes(attachment_attachment: :blob).order(:version_number)
+      expect(versions.pluck(:version_number, :status)).to eq([[1, 'published'], [2, 'published']])
+      expect(versions.first.attachment.blob.filename.to_s).to eq('thinking-cat.jpg')
+      expect(versions.last.attachment.blob).to eq(digital_asset.attachment.blob)
     end
 
     it 'leaves the file alone when the payload carries none' do

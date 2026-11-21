@@ -17,6 +17,10 @@ module Spree
 
     belongs_to :variant, class_name: 'Spree::Variant'
     has_many :digital_links, class_name: 'Spree::DigitalLink', dependent: :destroy
+    has_many :versions, class_name: 'Spree::DigitalAssetVersion', dependent: :destroy,
+                        inverse_of: :digital_asset
+    has_many :moderations, class_name: 'Spree::DigitalAssetModeration', dependent: :restrict_with_error,
+                           inverse_of: :digital_asset
 
     has_one_attached :attachment, service: Spree.private_storage_service_name
 
@@ -24,6 +28,14 @@ module Spree
     # says whether an attachment is required, so file assets keep today's rule
     # and provider-backed assets (which carry no file) are exempt.
     DEFAULT_PROVIDER = 'Spree::DigitalAssetProvider::File'.freeze
+
+    # This deployment sells only photographs and videos. Keep this narrower
+    # than Spree's general seller-upload defaults so marketplace mode cannot
+    # be widened to documents, archives or audio through store preferences.
+    CREATOR_MARKETPLACE_CONTENT_TYPES = %w[
+      image/jpeg image/png image/gif image/webp image/tiff image/avif
+      video/mp4 video/webm video/quicktime
+    ].freeze
 
     # What a seller may upload unless the marketplace says otherwise: the
     # formats digital goods usually come in. Executables, scripts and
@@ -111,9 +123,18 @@ module Spree
       provider_class.new(self).deliver(digital_link, expires_in: expires_in)
     end
 
-    # @return [Boolean] whether there is anything to hand to a customer
+    # Uploaded files are immediately deliverable unless an administrator has removed them.
+    def approved_for_delivery?
+      return false unless attachment.attached?
+
+      version = versions.max_by(&:version_number)
+      return true unless version
+
+      version.available_for_sale? && version.attachment.attached? && version.attachment.blob_id == attachment.blob_id
+    end
+
     def downloadable?
-      attachment.attached?
+      approved_for_delivery?
     end
 
     # @param expires_in [ActiveSupport::Duration] lifetime of the signed URL

@@ -12,12 +12,30 @@ module Spree
     end
 
     belongs_to :digital_asset, class_name: 'Spree::DigitalAsset'
+    belongs_to :digital_asset_version, class_name: 'Spree::DigitalAssetVersion', optional: true
     belongs_to :line_item, class_name: 'Spree::LineItem'
+
+    validate :pinned_version_matches_asset
 
     before_validation :set_defaults, on: :create
     validates :access_counter, numericality: { greater_than_or_equal_to: 0 }
 
-    delegate :filename, :content_type, to: :digital_asset
+    # Existing purchases retain their pinned revision unless an administrator removes it.
+    def filename
+      digital_asset_version&.attachment&.filename || digital_asset.filename
+    end
+
+    def content_type
+      digital_asset_version&.content_type || digital_asset.content_type
+    end
+
+    def deliverable_version?
+      if store.preferred_digital_creator_marketplace_enabled
+        digital_asset_version&.available_for_sale? && digital_asset_version.digital_asset_id == digital_asset_id
+      else
+        digital_asset_version.nil? || (digital_asset_version.available_for_sale? && digital_asset_version.digital_asset_id == digital_asset_id)
+      end
+    end
     # The order's store is authoritative for both the download-limit flags and,
     # passed into the asset, the limit values — so one store answers the whole
     # check. Public so the keyless download endpoint can derive store context
@@ -38,7 +56,7 @@ module Spree
     end
 
     def authorizable?
-      !(expired? || access_limit_exceeded?)
+      deliverable_version? && !(expired? || access_limit_exceeded?)
     end
 
     def expired?
@@ -85,6 +103,13 @@ module Spree
 
     def set_defaults
       self.access_counter ||= 0
+    end
+
+    def pinned_version_matches_asset
+      return if digital_asset_version.nil? || digital_asset.nil?
+      return if digital_asset_version.digital_asset_id == digital_asset_id && digital_asset_version.store_id == store.id
+
+      errors.add(:digital_asset_version, :invalid)
     end
   end
 end
