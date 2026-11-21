@@ -33,10 +33,13 @@ module Spree
       # assets (e.g. a manual with a device) that ship through other providers.
       def ensure_links_for(line_item)
         line_item.variant.digital_assets.each do |digital_asset|
-          # Pin the approved revision at purchase/fulfilment time. If no
-          # approved revision exists, do not mint a usable entitlement.
-          version = digital_asset.versions.latest_first.first
-          next unless version&.approved?
+          # Marketplace entitlements must pin the current approved revision.
+          # Other Spree stores retain the existing unversioned digital-link flow.
+          version = nil
+          if line_item.store.preferred_digital_creator_marketplace_enabled
+            version = digital_asset.versions.latest_first.first
+            next unless version&.approved?
+          end
           next unless version
 
           existing = line_item.digital_links.where(digital_asset: digital_asset).count
