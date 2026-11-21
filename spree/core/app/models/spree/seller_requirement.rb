@@ -69,6 +69,32 @@ module Spree
       Spree::SellerRequirements::MinimumProducts
     ].freeze
 
+    # Checks that must exist before creator onboarding can be approved. The
+    # identity document is reviewed by a person and is the evidence used to
+    # verify age; the remaining attestations preserve explicit declarations.
+    DEFAULT_REVIEW_REQUIREMENTS = [
+      {
+        type: 'Spree::SellerRequirements::Document',
+        name: 'Identity and age verification',
+        description: 'Upload a valid identity document. The marketplace team must verify identity and confirm that you are at least 18 years old.',
+      },
+      {
+        type: 'Spree::SellerRequirements::Attestation',
+        name: 'Legal age declaration',
+        description: 'I confirm that I am at least 18 years old and legally eligible to participate.',
+      },
+      {
+        type: 'Spree::SellerRequirements::Attestation',
+        name: 'Content rights ownership',
+        description: 'I confirm that I own or control the necessary rights to every item I submit and have authority to license it for sale.',
+      },
+      {
+        type: 'Spree::SellerRequirements::Attestation',
+        name: 'Consent and participant authorization',
+        description: 'I confirm that every identifiable participant has given informed consent and that I hold the required records and permissions.',
+      }
+    ].freeze
+
     # Writes the default checklist for a store, skipping kinds it already
     # has. Idempotent, so a store seeded before a kind existed picks it up on
     # the next run — but a requirement the operator deleted stays deleted
@@ -83,9 +109,22 @@ module Spree
       # refuses SELECT DISTINCT with an ORDER BY on a column it does not select.
       existing = store.seller_requirements.where(type: DEFAULT_KINDS).reorder(nil).distinct.pluck(:type)
 
-      ((DEFAULT_KINDS & registered) - existing).map do |kind|
+      created = ((DEFAULT_KINDS & registered) - existing).map do |kind|
         store.seller_requirements.create!(type: kind)
       end
+
+      DEFAULT_REVIEW_REQUIREMENTS.each do |attributes|
+        next unless registered.include?(attributes[:type])
+        next if store.seller_requirements.exists?(type: attributes[:type], name: attributes[:name])
+
+        created << store.seller_requirements.create!(
+          **attributes,
+          required: true,
+          active: true
+        )
+      end
+
+      created
     end
 
     # Whether the operator may configure this kind more than once per store.
