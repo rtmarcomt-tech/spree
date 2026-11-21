@@ -16,6 +16,10 @@ module Spree
 
     STATUSES = %w[pending approved rejected].freeze
 
+    IMMUTABLE_ATTRIBUTES = %w[digital_asset_id store_id version_number checksum content_type byte_size submitted_at].freeze
+
+    before_update :prevent_upload_identity_changes!
+
     validates :version_number, numericality: { only_integer: true, greater_than: 0 }
     validates :checksum, :content_type, presence: true
     validates :byte_size, numericality: { only_integer: true, greater_than: 0 }
@@ -28,6 +32,13 @@ module Spree
     scope :latest_first, -> { order(version_number: :desc) }
 
     private
+
+    def prevent_upload_identity_changes!
+      changed = IMMUTABLE_ATTRIBUTES.select { |attribute| will_save_change_to_attribute?(attribute) }
+      return if changed.empty?
+
+      raise ActiveRecord::ReadOnlyRecord, "Uploaded revision identity is immutable: #{changed.join(', ')}"
+    end
 
     def asset_belongs_to_same_store
       return unless digital_asset
