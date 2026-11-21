@@ -102,20 +102,6 @@ module Spree
         end
       end
 
-      # A seller changing what an approved listing delivers reopens its review.
-      # The operator's own change does not: they are the reviewer.
-      def reopen_review
-        return if seller.nil? || blob.nil? || !product.active?
-        return unless store.preferred_review_seller_digital_asset_changes
-        return if store.preferred_auto_approve_seller_products
-
-        result = Spree.product_propose_workflow.call(product: product, submitted_by: submitted_by, reason: REVIEW_REASON)
-        return if result.success?
-
-        digital_asset.errors.add(:base, result.error.to_s)
-        failure(digital_asset)
-      end
-
       def store
         product.store
       end
