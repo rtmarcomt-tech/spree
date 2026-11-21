@@ -2662,7 +2662,8 @@ export class AdminClient {
     calculators: (
       options?: RequestOptions,
     ): Promise<{
-      data: Array<{ type: string; name: string; schema: PreferenceSchema }> }> =>
+      data: Array<{ type: string; name: string; schema: PreferenceSchema }>
+    }> =>
       this.request<{ data: Array<{ type: string; name: string; schema: PreferenceSchema }> }>(
         'GET',
         '/delivery_methods/calculators',
@@ -3354,27 +3355,28 @@ export class AdminClient {
     list: (
       params?: { status?: 'published' | 'removed' },
       options?: RequestOptions,
-    ): Promise<{ data: Array<{
-      id: string
-      digital_asset_id: string
-      product_id: string
-      product_title: string
-      seller_id: string | null
-      seller_name: string | null
-      file_name: string
-      preview_url: string
-      version_number: number
-      status: 'published' | 'removed'
-      content_type: string
-      byte_size: number
-      submitted_at: string
-      moderation_history: Array<{
-        decision: string
-        reason_code: string | null
-        notes: string | null
-        decided_at: string | null
-        reviewer_id: string | null
-      }>
+    ): Promise<{
+      data: Array<{
+        id: string
+        digital_asset_id: string
+        product_id: string
+        product_title: string
+        seller_id: string | null
+        seller_name: string | null
+        file_name: string
+        preview_url: string
+        version_number: number
+        status: 'published' | 'removed'
+        content_type: string
+        byte_size: number
+        submitted_at: string
+        moderation_history: Array<{
+          decision: string
+          reason_code: string | null
+          notes: string | null
+          decided_at: string | null
+          reviewer_id: string | null
+        }>
       }>
     }> => this.request('GET', '/digital_asset_versions', { ...options, params }),
 
