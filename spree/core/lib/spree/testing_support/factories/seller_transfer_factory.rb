@@ -8,6 +8,8 @@ FactoryBot.define do
     kind { 'earning' }
     provider { Spree::PayoutProvider::System.provider_key }
     status { 'pending' }
+    # Historical specs model transfers that are already past any hold period.
+    release_at { Time.current }
 
     trait :completed do
       status { 'completed' }
