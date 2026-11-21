@@ -81,7 +81,11 @@ module Spree
       @orderable_variants ||= Spree::Variant.for_products(
         Spree.products_for_context_service.call(
           store: store, channel: channel, customer: customer, company: company,
-          base: store.products.not_discontinued_on(channel).digital_marketplace_visible
+          base: begin
+            products = store.products.not_discontinued_on(channel)
+            products = products.digital_marketplace_visible if store.preferred_digital_creator_marketplace_enabled
+            products
+          end
         ).value
       )
     end
