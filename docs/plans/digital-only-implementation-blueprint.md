@@ -382,3 +382,12 @@ Validation limitation: specs have been added but have not been run in a local ch
 - The v3 digital-link download endpoint now checks this predicate before generating a delivery URL or consuming a download click.
 - Legacy assets without version history, newly uploaded pending assets, and replaced assets awaiting review cannot be downloaded through this endpoint.
 - The moderator-facing approval workflow and storefront catalog/search visibility filter are still outstanding. This endpoint gate is not a substitute for those remaining controls.
+
+
+### Moderator decision workflow added
+
+- Added `Spree::DigitalAssets::Moderate` to approve or reject one pending uploaded revision.
+- The operation requires an administrator, locks the version, rechecks that it is still the current delivery revision, updates its status transactionally and appends a separate moderation decision with reviewer, timestamp, reason code and notes.
+- Stale revisions cannot be approved after a replacement upload. Repeated decisions are refused because the version must still be pending.
+- Added workflow specs for approval, rejection, missing reviewer and stale-version rejection.
+- The workflow is the domain operation only; an authenticated admin API endpoint and dashboard moderation queue still need to be connected.
