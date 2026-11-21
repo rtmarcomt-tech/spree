@@ -236,6 +236,13 @@ nav.add({
       subject: Subject.SellerPayout,
       position: 200,
     },
+    {
+      key: 'sellers.media-review',
+      labelKey: 'admin.nav.creator_media_review',
+      path: '/sellers/media-review',
+      subject: Subject.Product,
+      position: 300,
+    },
   ],
 })
 
