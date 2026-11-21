@@ -29,6 +29,14 @@ module Spree
     # and provider-backed assets (which carry no file) are exempt.
     DEFAULT_PROVIDER = 'Spree::DigitalAssetProvider::File'.freeze
 
+    # This deployment sells only photographs and videos. Keep this narrower
+    # than Spree's general seller-upload defaults so marketplace mode cannot
+    # be widened to documents, archives or audio through store preferences.
+    CREATOR_MARKETPLACE_CONTENT_TYPES = %w[
+      image/jpeg image/png image/gif image/webp image/tiff image/avif
+      video/mp4 video/webm video/quicktime
+    ].freeze
+
     # What a seller may upload unless the marketplace says otherwise: the
     # formats digital goods usually come in. Executables, scripts and
     # unrecognised binaries are left out on purpose, as is SVG, which can
