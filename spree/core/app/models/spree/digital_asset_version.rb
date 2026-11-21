@@ -13,7 +13,7 @@ module Spree
     has_many :moderations, class_name: 'Spree::DigitalAssetModeration',
                           dependent: :restrict_with_error, inverse_of: :digital_asset_version
 
-    STATUSES = %w[pending approved rejected].freeze
+    STATUSES = %w[published removed].freeze
 
     IMMUTABLE_ATTRIBUTES = %w[digital_asset_id store_id version_number checksum content_type byte_size submitted_at].freeze
 
@@ -32,8 +32,8 @@ module Spree
     scope :latest_first, -> { order(version_number: :desc) }
 
     # Approval belongs to this immutable upload, not to the asset's latest file.
-    def approved?
-      status == 'approved' && moderations.where(decision: 'approved').exists?
+    def available_for_sale?
+      status == 'published'
     end
 
     private
