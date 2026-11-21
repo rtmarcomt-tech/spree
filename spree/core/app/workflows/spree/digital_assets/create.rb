@@ -38,6 +38,7 @@ module Spree
         ApplicationRecord.transaction do
           step :attach_upload
           step :save_digital_asset
+          step :reopen_review
           run_hooks :after_create
         end
 
