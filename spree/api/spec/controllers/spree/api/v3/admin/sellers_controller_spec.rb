@@ -451,7 +451,7 @@ RSpec.describe Spree::Api::V3::Admin::SellersController, type: :controller do
       ActiveSupport::Notifications.unsubscribe(subscription)
 
       expect(response).to have_http_status(:ok)
-      expect(queries.grep(/spree_package_types/).size).to eq(1)
+      expect(queries.grep(/spree_package_types/).size).to eq(0)
     end
   end
 
