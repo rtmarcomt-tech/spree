@@ -17,6 +17,9 @@ module Spree
                                       inverse_of: :moderations
     belongs_to :reviewed_by_admin_user, class_name: 'Spree::AdminUser', optional: true
 
+    before_update :prevent_decision_rewrite!
+    before_destroy :prevent_decision_deletion!
+
     validates :decision, inclusion: { in: DECISIONS }
     validates :decided_at, presence: true, if: -> { decision.in?(%w[approved rejected]) }
     validates :reviewed_by_admin_user, presence: true, if: -> { decision.in?(%w[approved rejected]) }
@@ -26,6 +29,14 @@ module Spree
     scope :awaiting_review, -> { where(decision: 'pending') }
 
     private
+
+    def prevent_decision_rewrite!
+      raise ActiveRecord::ReadOnlyRecord, 'Moderation decisions are append-only; create a new decision instead'
+    end
+
+    def prevent_decision_deletion!
+      raise ActiveRecord::ReadOnlyRecord, 'Moderation decisions are retained as an audit record'
+    end
 
     def version_belongs_to_same_asset_and_store
       return unless digital_asset_version
