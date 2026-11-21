@@ -75,6 +75,9 @@ module Spree
     # without also stopping customer receipts.
     preference :send_seller_transactional_emails, :boolean, default: true
     # Marketplace preferences
+    # Restrict the public catalogue to approved creator-owned digital media.
+    # Disabled by default so existing Spree stores retain their normal catalogue.
+    preference :digital_creator_marketplace_enabled, :boolean, default: false
     #
     # VAT on the commission itself, as a fraction, when neither the rate nor
     # the tax provider names one. Zero by default: a marketplace outside the EU
