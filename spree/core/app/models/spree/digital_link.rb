@@ -31,7 +31,11 @@ module Spree
     end
 
     def deliverable_version?
-      digital_asset_version&.approved? && digital_asset_version.digital_asset_id == digital_asset_id
+      if store.preferred_digital_creator_marketplace_enabled
+        digital_asset_version&.approved? && digital_asset_version.digital_asset_id == digital_asset_id
+      else
+        digital_asset_version.nil? || (digital_asset_version.approved? && digital_asset_version.digital_asset_id == digital_asset_id)
+      end
     end
     # The order's store is authoritative for both the download-limit flags and,
     # passed into the asset, the limit values — so one store answers the whole
