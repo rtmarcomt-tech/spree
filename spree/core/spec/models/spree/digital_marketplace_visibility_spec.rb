@@ -13,18 +13,11 @@ RSpec.describe Spree::Product, type: :model do
         checksum: blob.checksum,
         content_type: blob.content_type,
         byte_size: blob.byte_size,
-        status: 'pending',
+        status: 'published',
         submitted_at: Time.current
       ).tap { |record| record.attachment.attach(blob); record.save! }
     end
 
-    before do
-      asset.moderations.create!(
-        store: product.store,
-        digital_asset_version: version,
-        decision: 'pending'
-      )
-    end
 
     it 'excludes products without a digital asset' do
       ordinary_product = create(:product)
@@ -32,38 +25,15 @@ RSpec.describe Spree::Product, type: :model do
       expect(described_class.digital_marketplace_visible).not_to include(ordinary_product)
     end
 
-    it 'excludes a product while its current media version is pending' do
-      expect(described_class.digital_marketplace_visible).not_to include(product)
-    end
-
-    it 'includes the product only after the current media version is approved' do
-      result = Spree::DigitalAssets::Moderate.call(
-        digital_asset_version: version,
-        decision: 'approved',
-        reviewer: create(:admin_user)
-      )
-
-      expect(result).to be_success
+    it 'includes a creator product immediately after its media is published' do
       expect(described_class.digital_marketplace_visible).to include(product)
     end
 
-    it 'excludes the product when the approved version is no longer the current blob' do
-      result = Spree::DigitalAssets::Moderate.call(
-        digital_asset_version: version,
-        decision: 'approved',
-        reviewer: create(:admin_user)
-      )
-      expect(result).to be_success
-
-      replacement = ActiveStorage::Blob.create_and_upload!(
-        io: File.open(Spree::Core::Engine.root.join('spec', 'fixtures', 'thinking-cat.jpg')),
-        filename: 'replacement.jpg',
-        content_type: 'image/jpeg',
-        service_name: Spree.private_storage_service_name
-      )
-      asset.attachment.attach(replacement)
+    it 'excludes a product after an administrator removes its current media version' do
+      version.update!(status: 'removed')
 
       expect(described_class.digital_marketplace_visible).not_to include(product)
     end
+
   end
 end
