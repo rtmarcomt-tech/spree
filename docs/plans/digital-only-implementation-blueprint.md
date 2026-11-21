@@ -428,3 +428,16 @@ Validation limitation: specs have been added but have not been run in a local ch
 - Identity/age evidence, rights ownership and consent are intentionally represented by operator-configured Document, Attestation and OperatorReview requirements. The exact evidence and wording must be set by the marketplace before creator onboarding is opened.
 - DigitalAssetVersion upload identity fields are now immutable after creation; moderation may change only its review status.
 - Admin moderation authorization is delegated to existing product read/update permissions, avoiding a new unregistered permission family.
+
+
+## Implementation update — mandatory creator verification
+
+The default seller checklist now provisions required, active requirements for:
+- identity document submission with human review and explicit age verification (18+);
+- a legal-age declaration;
+- ownership/control of the rights needed to license each submitted item;
+- informed consent and authorization for every identifiable participant.
+
+These named requirements are provisioned idempotently alongside the existing profile, terms, billing and initial-listing requirements. The marketplace must not approve a creator while any required item remains incomplete, pending or rejected. The declarations are recorded as seller requirement submissions; the identity document is private and operator-reviewed. This is an operational verification gate, not a claim that a document alone proves legal capacity or rights in every jurisdiction.
+
+Media revision hardening: the original private attachment may be assigned when a revision is first created, but an already attached revision cannot be repointed to different bytes. Replacements must create a new version and a new moderation decision. Media rejection authorization uses the same product update permission as approval.
