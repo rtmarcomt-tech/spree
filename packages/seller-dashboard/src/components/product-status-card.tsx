@@ -21,7 +21,15 @@ import { sellerClient } from '../api-client'
  * and the operator decides, so each status offers only what it can actually
  * do next (docs/plans/6.0-seller-product-submission.md).
  */
-export function ProductStatusCard({ product, onDone }: { product: Product; onDone: () => void }) {
+export function ProductStatusCard({
+  product,
+  onDone,
+  digitalMarketplace = false,
+}: {
+  product: Product
+  onDone: () => void
+  digitalMarketplace?: boolean
+}) {
   const { t } = useTranslation()
   const confirm = useConfirm()
 
@@ -51,7 +59,9 @@ export function ProductStatusCard({ product, onDone }: { product: Product; onDon
       <CardContent className="flex flex-col items-start gap-3">
         <StatusBadge status={status} label={t(`products.statuses.${status}`)} />
 
-        <p className="text-muted-foreground text-base">{t(`products.status_help.${status}`)}</p>
+        <p className="text-muted-foreground text-base">
+          {t(digitalMarketplace ? `products.marketplace_status_help.${status}` : `products.status_help.${status}`)}
+        </p>
 
         {/* Why the marketplace turned it down, so the seller knows what to
             fix. It lives on the submission rather than the product: a note
@@ -66,7 +76,7 @@ export function ProductStatusCard({ product, onDone }: { product: Product; onDon
         <div className="flex flex-wrap gap-2">
           {canSubmit && (
             <Button disabled={move.isPending} onClick={() => move.mutate('submit')}>
-              {t('products.submit_for_review')}
+              {t(digitalMarketplace ? 'products.publish' : 'products.submit_for_review')}
             </Button>
           )}
 
