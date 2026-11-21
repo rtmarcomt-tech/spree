@@ -3389,7 +3389,15 @@ export class AdminClient {
       id: string,
       params?: { reason_code?: string; notes?: string },
       options?: RequestOptions,
-    ): Promise<{ data: { id: string; digital_asset_id: string; version_number: number; status: string; submitted_at: string } }> =>
+    ): Promise<{
+        data: {
+          id: string
+          digital_asset_id: string
+          version_number: number
+          status: string
+          submitted_at: string
+        }
+      }> =>
       this.request('PATCH', `/digital_asset_versions/${id}/approve`, { ...options, body: params }),
 
     reject: (
