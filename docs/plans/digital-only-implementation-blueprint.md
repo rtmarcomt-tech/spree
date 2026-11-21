@@ -374,3 +374,11 @@ Added to the feature branch:
 Important remaining integration work: the storefront delivery and download authorization paths have not yet been changed to require an approved moderation decision for the exact current version. Until that gate is implemented and tested end-to-end, this work is a persistence/audit foundation, not a completed moderation enforcement system. Existing download delivery behaviour remains unchanged at this checkpoint.
 
 Validation limitation: specs have been added but have not been run in a local checkout. Use the repository's prescribed `scripts/test/` runner before deployment.
+
+
+### Delivery enforcement added after the versioning checkpoint
+
+- `Spree::DigitalAsset#approved_for_delivery?` now fails closed unless the current private attachment matches the latest preserved version, that version is marked approved, and an explicit approved moderation decision exists for that exact version.
+- The v3 digital-link download endpoint now checks this predicate before generating a delivery URL or consuming a download click.
+- Legacy assets without version history, newly uploaded pending assets, and replaced assets awaiting review cannot be downloaded through this endpoint.
+- The moderator-facing approval workflow and storefront catalog/search visibility filter are still outstanding. This endpoint gate is not a substitute for those remaining controls.
