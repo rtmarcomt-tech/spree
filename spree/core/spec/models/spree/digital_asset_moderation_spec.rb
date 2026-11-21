@@ -5,7 +5,7 @@ RSpec.describe Spree::DigitalAssetModeration, type: :model do
   let(:store) { digital_asset.store }
   let(:version) do
     blob = digital_asset.attachment.blob
-    Spree::DigitalAssetVersion.create!(
+    Spree::DigitalAssetVersion.new(
       store: store,
       digital_asset: digital_asset,
       version_number: 1,
@@ -14,7 +14,7 @@ RSpec.describe Spree::DigitalAssetModeration, type: :model do
       byte_size: blob.byte_size,
       status: 'pending',
       submitted_at: Time.current
-    ).tap { |item| item.attachment.attach(blob) }
+    ).tap { |item| item.attachment.attach(blob); item.save! }
   end
 
   it 'requires the moderation decision to refer to the same asset version' do
