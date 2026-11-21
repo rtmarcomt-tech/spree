@@ -35,7 +35,8 @@ module Spree
         line_item.variant.digital_assets.each do |digital_asset|
           # Pin the approved revision at purchase/fulfilment time. If no
           # approved revision exists, do not mint a usable entitlement.
-          version = digital_asset.versions.latest_first.detect(&:approved?)
+          version = digital_asset.versions.latest_first.first
+          next unless version&.approved?
           next unless version
 
           existing = line_item.digital_links.where(digital_asset: digital_asset).count
