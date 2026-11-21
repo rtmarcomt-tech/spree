@@ -31,6 +31,7 @@ import { useNavigate, useParams } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { sellerClient } from '../api-client'
+import { useAccount } from '../hooks/use-account'
 import '../tables/products'
 
 /**
@@ -50,6 +51,7 @@ export function ProductsPage({ search }: { search: ResourceSearch & { import?: s
   const { t } = useTranslation()
   const { sellerId } = useParams({ from: '/_authenticated/$sellerId' })
   const navigate = useNavigate()
+  const digitalMarketplace = !!useAccount().data?.store?.digital_creator_marketplace_enabled
 
   const open = (productId: string) =>
     navigate({ to: '/$sellerId/products/$productId', params: { sellerId, productId } })
@@ -77,20 +79,20 @@ export function ProductsPage({ search }: { search: ResourceSearch & { import?: s
 
     const submitAction: BulkAction<unknown> = {
       key: 'submit-for-review',
-      label: t('products.submit_for_review'),
+      label: t(digitalMarketplace ? 'products.publish' : 'products.submit_for_review'),
       icon: <SendIcon className="size-4" />,
       subject: Subject.Product,
       confirm: {
-        title: t('products.bulk.submit_confirm_title'),
-        message: t('products.bulk.submit_confirm_description'),
-        confirmLabel: t('products.submit_for_review'),
+        title: t(digitalMarketplace ? 'products.bulk.publish_confirm_title' : 'products.bulk.submit_confirm_title'),
+        message: t(digitalMarketplace ? 'products.bulk.publish_confirm_description' : 'products.bulk.submit_confirm_description'),
+        confirmLabel: t(digitalMarketplace ? 'products.publish' : 'products.submit_for_review'),
       },
       run: async ({ ids }) =>
         report(
           await sellerClient().products.bulkSubmit({ ids }),
           t('products.bulk.skipped_submit'),
         ),
-      successMessage: t('products.bulk.submitted'),
+      successMessage: t(digitalMarketplace ? 'products.bulk.published' : 'products.bulk.submitted'),
       errorMessage: t('products.bulk.submit_failed'),
     }
 
@@ -131,7 +133,7 @@ export function ProductsPage({ search }: { search: ResourceSearch & { import?: s
     }
 
     return [submitAction, statusAction, deleteAction] as BulkAction<unknown>[]
-  }, [t])
+  }, [t, digitalMarketplace])
 
   // The wizard is driven by an `?import=` param rather than component state,
   // so a refresh (or the link in the import-done email) reopens it.
