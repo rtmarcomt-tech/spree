@@ -3382,29 +3382,36 @@ export class AdminClient {
           reviewer_id: string | null
         }>
       }>
-    }> =>
-      this.request('GET', '/digital_asset_versions', { ...options, params }),
+    }> => this.request('GET', '/digital_asset_versions', { ...options, params }),
 
     approve: (
       id: string,
       params?: { reason_code?: string; notes?: string },
       options?: RequestOptions,
     ): Promise<{
-        data: {
-          id: string
-          digital_asset_id: string
-          version_number: number
-          status: string
-          submitted_at: string
-        }
-      }> =>
+      data: {
+        id: string
+        digital_asset_id: string
+        version_number: number
+        status: string
+        submitted_at: string
+      }
+    }> =>
       this.request('PATCH', `/digital_asset_versions/${id}/approve`, { ...options, body: params }),
 
     reject: (
       id: string,
       params: { reason_code: string; notes?: string },
       options?: RequestOptions,
-    ): Promise<{ data: { id: string; digital_asset_id: string; version_number: number; status: string; submitted_at: string } }> =>
+    ): Promise<{
+      data: {
+        id: string
+        digital_asset_id: string
+        version_number: number
+        status: string
+        submitted_at: string
+      }
+    }> =>
       this.request('PATCH', `/digital_asset_versions/${id}/reject`, { ...options, body: params }),
   }
 
