@@ -119,7 +119,7 @@ function CreatorMediaReviewPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const queue = useQuery({
-    queryKey: ['digital-asset-versions', 'pending'],
+    queryKey: ['digital-asset-versions', 'published'],
     queryFn: () => adminClient.digitalAssetVersions.list({ status: 'published' }),
   })
 
@@ -163,7 +163,7 @@ function CreatorMediaReviewPage() {
       )}
 
       {queue.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading pending uploads…</p>
+        <p className="text-sm text-muted-foreground">Loading published creator content…</p>
       ) : items.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
