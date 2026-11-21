@@ -4,21 +4,21 @@
 **Branch:** `feat/digital-only-marketplace`  
 **Parent architecture:** `docs/plans/digital-only-creator-marketplace.md`
 
-This blueprint translates the source audit into one coherent implementation design. It is intentionally end-to-end: creator onboarding, media, moderation, publication, checkout, delivery, earnings, holds, refunds and payouts are treated as one lifecycle.
+This blueprint translates the source audit into one coherent implementation design. It is intentionally end-to-end: creator onboarding, immediate media publication, post-publication enforcement, checkout, delivery, earnings, holds, refunds and manual payouts are treated as one lifecycle.
 
 ## 1. Deployment boundary and fixed product rules
 
 - One Spree Store is the marketplace tenant.
 - Many approved creators are represented by Spree Sellers.
 - Only photo and video content may be listed.
-- One product represents one individually purchasable content item. One default variant, one zero-or-positive price per supported currency, one required approved original asset.
+- One product represents one individually purchasable content item. One default variant, one zero-or-positive price per supported currency, one required original asset.
 - A cart may contain multiple individually priced listings. No bundles, packs, subscriptions or recurring billing.
 - Free items use a zero-valued Spree Price and the zero-total order path; they never create a PayPal payment session.
 - Paid items use the platform's PayPal merchant account. Capture at checkout is the required store configuration for the initial release.
 - Commission is 10% of the approved commission basis. The exact tax/discount treatment follows Spree's tax-aware commission calculation and must be configured and tested, not recomputed separately.
 - Creator payouts are manual PayPal transfers in the first release, recorded with the external PayPal transaction reference. The PayPal checkout gateway is not a payout provider.
 - No Stripe or Stripe Connect dependencies.
-- All creator applications, content and media are private until the relevant approvals are complete.
+- Creator applications and verification evidence remain private until seller approval. Creator media is published immediately after upload by an approved seller; there is no per-file pre-approval.
 - Physical fulfilment, shipping, package types, stock locations, inventory and shipping addresses are not part of the product experience.
 
 ## 2. Existing entities to reuse
@@ -57,13 +57,13 @@ Add validated, store-scoped preferences:
 
 PayPal capture-at-checkout is configured through the existing payment-method capture setting. The marketplace must validate this configuration during deployment/health checks and warn or refuse launch if PayPal is configured for authorization-only capture.
 
-### 3.2 Media moderation record
+### 3.2 Post-publication removal audit record
 
-Add `Spree::DigitalAssetModeration` (one-to-many history per DigitalAsset):
+Use `Spree::DigitalAssetModeration` as an append-only record only when an administrator removes a published DigitalAssetVersion:
 
 - `digital_asset_id` — required FK.
 - `version` — monotonically increasing asset file version.
-- `status` — `pending_scan`, `pending_review`, `approved`, `rejected`, `quarantined`, `superseded`.
+- `decision` — `removed`.
 - `source` — `automated`, `human`, `system`.
 - `decision_code` and `decision_note`.
 - `submitted_by_id`, `reviewed_by_id`.
@@ -71,7 +71,7 @@ Add `Spree::DigitalAssetModeration` (one-to-many history per DigitalAsset):
 - `scanner_name`, `scanner_version`, `scanner_result` JSON.
 - `appeal_status`, `appeal_note`, `appealed_at`, `appeal_reviewed_by_id`, `appeal_reviewed_at`.
 
-Keep moderation decisions append-only. A replacement file creates a new version and new moderation row; it must not overwrite the previous approved version or silently change what existing buyers receive.
+Removal records are append-only. A creator upload creates a new published version immediately; it does not create a moderation row.
 
 ### 3.3 Media file version
 
@@ -79,7 +79,7 @@ Add `Spree::DigitalAssetVersion`:
 
 - `digital_asset_id`, `version`, `active_storage_blob_id` (private blob).
 - `content_type`, `byte_size`, `checksum`, `filename`.
-- `status`: `pending`, `approved`, `rejected`, `superseded`.
+- `status`: `published`, `removed`.
 - `created_by_id`, timestamps.
 
 The DigitalAsset's current attachment may continue to represent the latest candidate for compatibility, but delivery resolves the approved version for the entitlement, not an arbitrary current attachment. If retaining prior approved originals is required for existing purchases, old blobs cannot be purged while an active entitlement references them.
@@ -145,9 +145,9 @@ Publication requires all gates:
 - required original and preview media versions approved;
 - product has the required digital delivery profile and exactly one eligible digital asset.
 
-A content edit affecting title, price or description may reopen listing review according to policy. Replacing an original or preview always creates a new media version and returns the new version to moderation. The previous approved version remains available only to existing entitlements if policy allows; it is never used to publish the new version.
+A content edit affecting title, price or description may reopen listing review according to policy. Replacing an original or preview creates a new media version and publishes it immediately. The administrator may remove the new version if it violates platform rules.
 
-### 4.3 Media moderation transitions
+### 4.3 Post-publication enforcement
 
 - Scanner clean and low-risk: move to `pending_review` or `approved` only according to an explicit approved policy; default launch setting is human approval.
 - Malware, invalid signature, disallowed type or policy violation: `rejected` or `quarantined`.
