@@ -74,7 +74,13 @@ module Spree
       end
 
       def attach_upload
-        digital_asset.attachment.attach(blob) if blob
+        return unless blob
+
+        # Retain the previous attachment on its immutable version before the
+        # asset points at the replacement. Active Storage callbacks can defer
+        # the attachment change until the asset save completes.
+        @previous_attachment_blob = digital_asset.attachment.blob if digital_asset.persisted?
+        digital_asset.attachment.attach(blob)
       end
 
       def save_digital_asset
@@ -114,6 +120,13 @@ module Spree
           )
           version.attachment.attach(blob)
           version.save!
+
+          # The old blob remains pinned to its previous revision even after the
+          # asset's current attachment has been replaced.
+          if @previous_attachment_blob && version.version_number > 1
+            previous = digital_asset.versions.where.not(id: version.id).latest_first.first
+            previous.attachment.attach(@previous_attachment_blob) if previous && !previous.attachment.attached?
+          end
         end
       end
 
