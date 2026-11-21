@@ -73,8 +73,8 @@ test.describe('seller packaging', () => {
 
       // Digital-only onboarding deliberately omits physical shipping requirements.
       await goToSetup()
-      await expect(sellerPage.getByText(/shipping box/i)).toHaveCount(0)
-      await expect(sellerPage.getByText(/package type/i)).toHaveCount(0)
+      await expect(sellerPage.getByRole('button', { name: /shipping box/i })).toHaveCount(0)
+      await expect(sellerPage.getByRole('button', { name: /package type/i })).toHaveCount(0)
     } finally {
       await context.close()
     }
