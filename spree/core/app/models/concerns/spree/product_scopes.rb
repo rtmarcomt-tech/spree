@@ -328,7 +328,24 @@ module Spree
             select(:digital_asset_version_id)).
           select(:digital_asset_id)
 
-        approved_asset_ids = Spree::DigitalAsset.where(id: latest_approved_versions).select(:id)
+        assets = Spree::DigitalAsset.arel_table
+        versions = Spree::DigitalAssetVersion.arel_table
+        attachments = ActiveStorage::Attachment.quoted_table_name
+        approved_asset_ids = Spree::DigitalAsset.
+          joins(:versions).
+          where(id: latest_approved_versions).
+          joins(<<~SQL.squish).
+            INNER JOIN #{attachments} current_asset_files
+              ON current_asset_files.record_type = 'Spree::DigitalAsset'
+             AND current_asset_files.record_id = #{assets.name}.id
+             AND current_asset_files.name = 'attachment'
+            INNER JOIN #{attachments} approved_version_files
+              ON approved_version_files.record_type = 'Spree::DigitalAssetVersion'
+             AND approved_version_files.record_id = #{versions.name}.id
+             AND approved_version_files.name = 'attachment'
+             AND approved_version_files.blob_id = current_asset_files.blob_id
+          SQL
+          select("#{assets.name}.id")
 
         seller_ids_sql = approved_sellers.to_sql
 
