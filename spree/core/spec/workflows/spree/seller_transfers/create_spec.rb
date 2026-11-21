@@ -114,6 +114,24 @@ RSpec.describe Spree::SellerTransfers::Create do
     end
   end
 
+  describe 'creator earnings release time' do
+    it 'blocks payout eligibility until the store configures a hold period' do
+      transfer = described_class.call(order: shipped_order).value
+
+      expect(transfer.release_at).to be_nil
+    end
+
+    it 'uses the configured hold period from fulfillment' do
+      store.update!(preferred_creator_earnings_hold_days: 3)
+      order = shipped_order
+      fulfilled_at = order.fulfilled_at
+
+      transfer = described_class.call(order: order).value
+
+      expect(transfer.release_at).to be_within(1.second).of(fulfilled_at + 3.days)
+    end
+  end
+
   describe 'replay' do
     it 'returns the earning that exists rather than crediting twice' do
       order = shipped_order
