@@ -20,7 +20,7 @@ module Spree
           # GET /api/v3/admin/digital_asset_versions?status=pending
           # The queue is store-scoped and defaults to pending reviews.
           def index
-            authorize! :read, Spree::DigitalAssetVersion
+            authorize! :read, Spree::Product
 
             status = params[:status].presence || 'pending'
             unless Spree::DigitalAssetVersion::STATUSES.include?(status)
@@ -62,12 +62,12 @@ module Spree
           end
 
           def show
-            authorize! :read, @resource
+            authorize! :read, @resource.digital_asset.product
             render_version
           end
 
           def approve
-            authorize! :update, @resource
+            authorize! :update, @resource.digital_asset.product
             decide('approved')
           end
 
