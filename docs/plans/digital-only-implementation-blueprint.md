@@ -344,3 +344,18 @@ Every wave is delivered as a coherent, tested unit on this feature branch. Do no
 - Define dispute/chargeback response operations and manual PayPal case hold process.
 - Set the exact hold duration and minimum payout amount.
 - Complete legal, privacy, data retention and consumer-rights review for the marketplace's operating jurisdictions.
+
+
+## Implementation progress — M1 financial release foundation
+
+Implemented on `feat/digital-only-marketplace`:
+
+- Added nullable `creator_earnings_hold_days` store preference. No duration is assumed: when unset, new earnings are recorded but remain ineligible for payout (fail-closed).
+- Added `release_at` to seller transfers. New earnings derive it from the order fulfillment timestamp plus the configured number of days.
+- Existing transfers are backfilled to their original `created_at`, preserving their pre-existing payout eligibility.
+- Added `Spree::SellerTransferHold` as a store-scoped, auditable record with independent hold kinds (`refund_review`, `dispute`, `manual_review`, `compliance`), active/released status, reason, optional source reference, metadata, creator/releaser admin references and release timestamp.
+- Added a release operation that requires an administrator and preserves the release note and audit fields.
+- Updated payout selection to exclude earnings whose release time has not arrived or which have any active hold. Refund reversals follow the original earning's release/hold eligibility.
+- Added model/workflow specs and factories for release times and financial holds.
+
+Validation limitation: these changes were committed through the GitHub repository API. The repository test suite has not been executed in a local checkout, so the added specs are not yet reported as passing. Before deployment, run the core model and workflow specs through the repository's prescribed `scripts/test/` runner.
