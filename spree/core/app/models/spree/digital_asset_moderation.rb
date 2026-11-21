@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Spree
-  # Append-only moderation decision for one exact uploaded file revision.
+  # Append-only administrative removal record for one exact published file revision.
   # A later upload creates a new version and a new decision trail; it cannot
   # inherit approval from an earlier file.
   class DigitalAssetModeration < Spree.base_class
@@ -26,7 +26,6 @@ module Spree
     validate :version_belongs_to_same_asset_and_store
 
     scope :latest_first, -> { order(created_at: :desc, id: :desc) }
-    scope :awaiting_review, -> { where(decision: 'pending') }
 
     private
 
