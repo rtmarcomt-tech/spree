@@ -126,11 +126,6 @@ module Spree
             )
             latest.attachment.attach(@previous_attachment_blob)
           elsif @previous_attachment_blob && latest && !latest.attachment.attached?
-            latest.update!(
-              checksum: @previous_attachment_blob.checksum,
-              content_type: @previous_attachment_blob.content_type,
-              byte_size: @previous_attachment_blob.byte_size
-            )
             latest.attachment.attach(@previous_attachment_blob)
           end
 
