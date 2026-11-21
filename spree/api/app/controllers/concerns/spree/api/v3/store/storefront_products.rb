@@ -22,7 +22,7 @@ module Spree
               channel: current_channel,
               customer: current_user,
               base: base.available(Time.current, Spree::Current.currency, include_preorderable: true)
-            ).value
+            ).value.digital_marketplace_visible
           end
 
           # @return [ActiveRecord::Relation<Spree::Variant>]
