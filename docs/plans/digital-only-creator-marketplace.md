@@ -17,8 +17,8 @@ The following requirements are fixed for this implementation:
 - Creator earnings are recorded in a ledger. Funds remain unavailable for payout during a configurable holding period to cover refunds and disputes.
 - A creator payout is eligible only when the creator's payable balance reaches a configurable minimum.
 - PayPal is the payment method. **Do not introduce Stripe or Stripe Connect.**
-- Creator registration/application, identity and content approval must be completed before publication. New or changed media remains private and unavailable until moderation approves it.
-- Admin review must support approve, reject with reason, request correction, suspend and reinstate. Uncertain or risky automated moderation results require human review. Every decision is auditable and appealable.
+- Creator registration/application and identity verification must be completed before selling. Once approved as a seller, the creator publishes media immediately and is responsible for compliance. Admins may remove content after publication when it violates platform rules; there is no per-file pre-approval.
+- Admin review must support creator approval/rejection/suspension/reinstatement and post-publication content removal with a mandatory reason and immutable audit trail. Content removal does not require prior review or approval.
 - The platform controls the payment relationship with the buyer. A creator must never receive buyer payment credentials or access to another creator's orders, customers, files or ledger.
 - No implementation may silently change these rules.
 
@@ -52,7 +52,7 @@ No payout may be completed merely because a payout record was created. Completio
 
 Reuse Spree's existing `Store`, `Seller`, `Product`, `Variant`, `DigitalAsset`, `DigitalLink`, `Order`, `OrderGroup`, `PaymentSplit`, `CommissionLine`, `SellerTransfer` and `SellerPayout` models where their contracts fit.
 
-The catalogue will represent one purchasable content item per product, with one default variant and one approved digital asset. The product is the commercial listing (title, description, price, creator, visibility and publication status); the private digital asset is the original deliverable. A listing may be free or paid. Do not expose original storage URLs or blob identifiers.
+The catalogue will represent one purchasable content item per product, with one default variant and one digital asset. The product is the commercial listing (title, description, price, creator, visibility and publication status); the private digital asset is the original deliverable. A listing may be free or paid. Do not expose original storage URLs or blob identifiers.
 
 Required ownership rules:
 
@@ -61,7 +61,7 @@ Required ownership rules:
 - Every commission, transfer and payout is scoped to the seller and store.
 - Every uploaded blob is private and store-owned.
 - Creator APIs use seller-scoped controllers and current-seller lookups; never accept a client-supplied seller ID as authorization.
-- Public catalogue endpoints return only approved, published listings and safe preview media.
+- Public catalogue endpoints return only published listings from approved creators and safe preview media.
 - A buyer receives a download entitlement only for a free item or a successfully paid item.
 - A creator can access only their own listing, media status, sales summaries and ledger rows.
 - Admin users can review all creators, listings, media, orders, refunds, disputes and payout records according to RBAC.
@@ -71,11 +71,11 @@ Required ownership rules:
 1. Creator applies/registers and submits required profile and verification information.
 2. Admin reviews the creator. Rejected or pending creators cannot publish or sell.
 3. Approved creator submits a content listing and uploads the original file to private storage.
-4. Upload validation checks file signature/type, size, duration/dimensions where relevant, malware scan and moderation state. The original remains private.
-5. Automated moderation may approve only clear low-risk cases under a documented policy. Uncertain, flagged or high-risk content is blocked pending human review.
-6. Admin approves or rejects the listing/media. Rejection records a reason and correction/appeal path.
+4. Upload validation checks file signature/type, size, duration/dimensions where relevant and malware scan. The original remains in private storage and is immediately available for sale.
+5. The creator is responsible for the legality and policy compliance of every publication. Admins may inspect and remove violating content after publication.
+6. Admin may remove a violating publication, recording a mandatory reason.
 7. Approved content may be published as free or assigned an individual price.
-8. A change to the original file or material listing content returns it to review and removes it from sale until re-approved.
+8. A creator may publish or replace content without pre-approval. Each new version is immediately saleable unless an administrator removes it.
 9. Suspension of a creator blocks new publication and new sales; existing purchase entitlements and financial records remain auditable and are handled under a documented support/refund policy.
 
 ## Purchase and delivery lifecycle
