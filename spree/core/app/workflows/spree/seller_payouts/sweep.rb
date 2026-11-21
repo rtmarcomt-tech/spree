@@ -76,10 +76,27 @@ module Spree
         rows = seller.seller_transfers.unsettled.settling_in(currency).order(:created_at, :id).to_a
         halt!(seller) if rows.empty?
 
-        @transfers = payable_within(rows)
+        @transfers = payable_within(payout_eligible(rows))
         halt!(seller) if @transfers.empty?
 
         @amount = @transfers.sum(&:settlement_amount)
+      end
+
+      # An earning is payable only after its configured release time and while
+      # no independent financial hold remains active. Reversals follow the
+      # original earning's eligibility so a held earning cannot leak through
+      # as a negative row in another settlement.
+      def payout_eligible(rows)
+        return [] if rows.empty?
+
+        earning_ids = rows.filter_map { |row| row.earning? ? row.id : row.reversed_from_id }.uniq
+        release_times = Spree::SellerTransfer.where(id: earning_ids).pluck(:id, :release_at).to_h
+        held_ids = Spree::SellerTransferHold.blocking.where(seller_transfer_id: earning_ids).pluck(:seller_transfer_id)
+        rows.select do |row|
+          earning_id = row.earning? ? row.id : row.reversed_from_id
+          release_at = release_times[earning_id]
+          release_at.present? && release_at <= Time.current && !held_ids.include?(earning_id)
+        end
       end
 
       # Every reversal counts, whatever is available: it is money already taken
