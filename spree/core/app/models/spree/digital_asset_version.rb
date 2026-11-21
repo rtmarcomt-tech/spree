@@ -32,7 +32,7 @@ module Spree
     def asset_belongs_to_same_store
       return unless digital_asset
 
-      errors.add(:digital_asset, :invalid) unless digital_asset.store_id == store_id
+      errors.add(:digital_asset, :invalid) unless digital_asset.store&.id == store_id
     end
   end
 end
