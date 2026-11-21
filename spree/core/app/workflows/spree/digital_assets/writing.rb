@@ -82,6 +82,21 @@ module Spree
         record_uploaded_version if blob
       end
 
+      # A seller changing what an approved listing delivers reopens its review.
+      # The operator's own change does not: they are the reviewer.
+      def reopen_review
+        return if store.preferred_digital_creator_marketplace_enabled
+        return if seller.nil? || blob.nil? || !product.active?
+        return unless store.preferred_review_seller_digital_asset_changes
+        return if store.preferred_auto_approve_seller_products
+
+        result = Spree.product_propose_workflow.call(product: product, submitted_by: submitted_by, reason: REVIEW_REASON)
+        return if result.success?
+
+        digital_asset.errors.add(:base, result.error.to_s)
+        failure(digital_asset)
+      end
+
       # Keep a second private attachment to the exact uploaded blob. Replacing
       # DigitalAsset#attachment later therefore cannot change what an earlier
       # buyer entitlement or a moderator's decision refers to.
