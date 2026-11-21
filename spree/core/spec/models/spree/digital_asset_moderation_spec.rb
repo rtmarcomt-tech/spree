@@ -28,6 +28,29 @@ RSpec.describe Spree::DigitalAssetModeration, type: :model do
     expect(moderation).to be_valid
   end
 
+  it 'keeps delivery blocked until the current file version has an approval decision' do
+    moderation = described_class.create!(
+      store: store,
+      digital_asset: digital_asset,
+      digital_asset_version: version,
+      decision: 'pending'
+    )
+
+    expect(digital_asset).not_to be_approved_for_delivery
+
+    version.update!(status: 'approved')
+    described_class.create!(
+      store: store,
+      digital_asset: digital_asset,
+      digital_asset_version: version,
+      decision: 'approved',
+      reviewed_by_admin_user: create(:admin_user),
+      decided_at: Time.current
+    )
+
+    expect(digital_asset.reload).to be_approved_for_delivery
+  end
+
   it 'does not permit rewriting a recorded decision' do
     moderation = described_class.create!(
       store: store,
