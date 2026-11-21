@@ -76,13 +76,7 @@ module Spree
           def preview
             authorize! :read, @resource.digital_asset.product
 
-            unless @resource.attachment.attached?
-              return render_error(
-                code: ERROR_CODES[:not_found],
-                message: 'Digital asset revision file not found',
-                status: :not_found
-              )
-            end
+            return head :not_found unless @resource.attachment.attached?
 
             response.headers['X-Content-Type-Options'] = 'nosniff'
             response.headers['Content-Security-Policy'] = "default-src 'none'; sandbox"
