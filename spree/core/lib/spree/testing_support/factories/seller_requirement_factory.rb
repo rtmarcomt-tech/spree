@@ -33,6 +33,10 @@ FactoryBot.define do
       type { 'Spree::SellerRequirements::PackageType' }
     end
 
+    factory :payout_account_requirement, class: Spree::SellerRequirements::PayoutAccount do
+      type { 'Spree::SellerRequirements::PayoutAccount' }
+    end
+
     factory :required_custom_fields_requirement, class: Spree::SellerRequirements::RequiredCustomFields do
       type { 'Spree::SellerRequirements::RequiredCustomFields' }
     end
