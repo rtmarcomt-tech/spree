@@ -21,7 +21,7 @@ module Spree
     before_destroy :prevent_decision_deletion!
 
     validates :decision, inclusion: { in: DECISIONS }
-    validates :decided_at, presence: true, if: -> { decision.in?(%w[approved rejected]) }
+    validates :decided_at, presence: true, if: -> { decision == 'removed' }
     validates :reviewed_by_admin_user, presence: true, if: -> { decision.in?(%w[approved rejected]) }
     validate :version_belongs_to_same_asset_and_store
 
