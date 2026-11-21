@@ -460,3 +460,30 @@ Remaining before implementation:
 4. Complete the migration and end-to-end test matrix for the digital-only constraints and visibility gates.
 
 No production feature code has been changed in this audit step.
+
+
+### 15. Search results are intersected with database scope, but search facets need their own visibility filter
+
+- The Meilisearch provider converts returned product IDs back into an ActiveRecord relation and intersects them with the caller's scope. This is a useful security boundary: a stale search document cannot widen the product records returned by the API if the caller's scope is correct.
+- The dedicated filters/facets method obtains counts and facet distributions directly from Meilisearch; it does not apply the supplied ActiveRecord scope to the external index response.
+- Product index documents currently carry product status, channel IDs, price, stock, categories and collections, but no creator approval/sellability state or per-asset moderation state.
+- Product indexing is queued on product create/update/destroy. A seller status change or media moderation decision does not automatically reindex every related product.
+- Product public reads are channel/publication/active scoped, but—as established above—do not explicitly require the seller to be sellable or the digital asset to be approved.
+
+**Implementation consequence:** the digital marketplace must have one shared public eligibility predicate used by the database scope and all checkout/delivery paths. The Meilisearch filters endpoint must either compute facets from that eligible database scope or index and reliably maintain all required visibility fields; it must not report hidden creator/content counts. Seller suspension/reinstatement and media moderation transitions must invalidate/reindex affected product documents and caches, with fail-closed behavior while indexing is pending. Database scoping remains the final authority for returned product records.
+
+### 16. Free items can be represented in the existing price/index model
+
+The price model accepts zero as a valid non-negative amount. The product availability scope requires a listed price in the current currency, but does not itself exclude a zero amount. The Meilisearch presenter also serializes the price as a numeric value and only skips a market/currency pair when no price exists.
+
+**Implementation consequence:** use a normal zero-valued price for a free listing, not a missing price. Missing price means the listing is not priced for that currency and may be excluded from the public catalogue. The free claim path must bypass PayPal payment-session creation (PayPal rejects zero-amount sessions) and complete through Spree's zero-total checkout path.
+
+### Final Wave 0 source audit status
+
+The core source audit has identified the reusable implementation and the material gaps. Wave 0 is ready to be frozen into a detailed implementation blueprint, subject to a final review of the exact PayPal capture preference and the refund/dispute model available in the deployment's installed modules.
+
+**Confirmed reuse:** seller identity/RBAC, onboarding requirement engine, product review, private digital assets, DigitalLinks, zero-total checkout, order splitting, payment splits, commission lines, seller transfers, payout ledger, minimum payout threshold and operator-confirmed System payouts.
+
+**Confirmed additions required:** digital-only listing and API validation; creator-specific onboarding checklist; per-media moderation and immutable file-version/quarantine handling; public eligibility predicate including seller status and media approval; secure preview derivatives; fixed 10% commission configuration; held-earnings release timestamp and captured-payment/dispute gate; PayPal payout operations or a verified automated PayPal Payouts provider; creator dashboard adaptation; public search/facet/cache visibility controls; end-to-end tests and deployment configuration.
+
+No production feature code has been changed in this audit step.
