@@ -125,7 +125,7 @@ RSpec.describe Spree::SellerTransfers::Create do
       store.update!(preferred_creator_earnings_hold_days: 3)
       order = shipped_order
       fulfillment = order.fulfillments.where(status: %w[fulfilled delivered]).sole
-      fulfilled_at = fulfillment.fulfilled_at
+      fulfilled_at = fulfillment.fulfilled_at || Time.current
 
       transfer = described_class.call(order: order).value
 
