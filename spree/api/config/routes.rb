@@ -399,6 +399,7 @@ Spree::Core::Engine.add_routes do
         # scoped to one immutable version and never inherited by replacements.
         resources :digital_asset_versions, only: [:index, :show] do
           member do
+            get :preview
             patch :approve
             patch :reject
           end
