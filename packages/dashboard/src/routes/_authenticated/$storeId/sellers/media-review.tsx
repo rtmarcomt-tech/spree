@@ -45,9 +45,7 @@ function AuthenticatedMediaPreview({ item }: { item: PreviewItem }) {
           item.preview_url.startsWith('http://') || item.preview_url.startsWith('https://')
             ? item.preview_url
             : `${apiBaseUrl}${item.preview_url}`
-        const apiOrigin = apiBaseUrl
-          ? new URL(apiBaseUrl).origin
-          : window.location.origin
+        const apiOrigin = apiBaseUrl ? new URL(apiBaseUrl).origin : window.location.origin
         const sameOrigin = new URL(url, window.location.origin).origin === apiOrigin
         const headers: Record<string, string> = {}
 
@@ -85,17 +83,33 @@ function AuthenticatedMediaPreview({ item }: { item: PreviewItem }) {
   if (!objectUrl) return <p className="text-sm text-muted-foreground">Loading secure preview…</p>
 
   if (item.content_type.startsWith('image/')) {
-    return <img src={objectUrl} alt={item.file_name} className="max-h-[480px] max-w-full rounded-md object-contain" />
+    return (
+      <img
+        src={objectUrl}
+        alt={item.file_name}
+        className="max-h-[480px] max-w-full rounded-md object-contain"
+      />
+    )
   }
   if (item.content_type.startsWith('video/')) {
     // Uploaded source videos may not include caption files; reviewers must inspect the original media.
     // biome-ignore lint/a11y/useMediaCaption: source uploads are reviewed as submitted and have no generated caption track.
-    return <video src={objectUrl} controls playsInline className="max-h-[480px] max-w-full rounded-md" />
+    return (
+      <video src={objectUrl} controls playsInline className="max-h-[480px] max-w-full rounded-md" />
+    )
   }
   if (item.content_type === 'application/pdf') {
-    return <a className="text-sm underline" href={objectUrl} target="_blank" rel="noreferrer">Open private PDF preview</a>
+    return (
+      <a className="text-sm underline" href={objectUrl} target="_blank" rel="noreferrer">
+        Open private PDF preview
+      </a>
+    )
   }
-  return <p className="text-sm text-muted-foreground">No inline preview is available for this file type.</p>
+  return (
+    <p className="text-sm text-muted-foreground">
+      No inline preview is available for this file type.
+    </p>
+  )
 }
 
 function CreatorMediaReviewPage() {
@@ -139,13 +153,17 @@ function CreatorMediaReviewPage() {
 
       {queue.isError && (
         <Alert variant="destructive">
-          <AlertDescription>Could not load the moderation queue. Check your permissions and try again.</AlertDescription>
+          <AlertDescription>
+            Could not load the moderation queue. Check your permissions and try again.
+          </AlertDescription>
         </Alert>
       )}
 
       {decision.isError && (
         <Alert variant="destructive">
-          <AlertDescription>{(decision.error as Error).message || 'The moderation decision failed.'}</AlertDescription>
+          <AlertDescription>
+            {(decision.error as Error).message || 'The moderation decision failed.'}
+          </AlertDescription>
         </Alert>
       )}
 
