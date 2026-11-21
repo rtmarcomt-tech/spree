@@ -40,7 +40,6 @@ module Spree
             version = digital_asset.versions.latest_first.first
             next unless version&.approved?
           end
-          next unless version
 
           existing = line_item.digital_links.where(digital_asset: digital_asset).count
           (line_item.quantity - existing).times do
