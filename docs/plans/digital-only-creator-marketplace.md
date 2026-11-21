@@ -1,6 +1,6 @@
 # Digital-Only Creator Marketplace
 
-**Status:** Architecture plan — implementation not started  
+**Status:** Implementation in progress — partial; end-to-end validation and production readiness are not established  
 **Target:** Custom Spree deployment, based on the existing 6.0 codebase  
 **Branch:** `feat/digital-only-marketplace`  
 **Purpose:** Adapt this Spree repository into a multi-creator marketplace selling individual digital photographs and videos only.
