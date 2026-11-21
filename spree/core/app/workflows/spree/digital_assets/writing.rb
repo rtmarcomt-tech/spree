@@ -115,7 +115,7 @@ module Spree
           # revision row. On their first replacement, preserve the bytes that
           # were previously delivered before recording the new upload.
           if @previous_attachment_blob && latest.nil?
-            latest = digital_asset.versions.create!(
+            latest = digital_asset.versions.build(
               store: store,
               version_number: 1,
               checksum: @previous_attachment_blob.checksum,
@@ -125,6 +125,7 @@ module Spree
               submitted_at: Time.current
             )
             latest.attachment.attach(@previous_attachment_blob)
+            latest.save!
           elsif @previous_attachment_blob && latest && !latest.attachment.attached?
             latest.attachment.attach(@previous_attachment_blob)
           end
