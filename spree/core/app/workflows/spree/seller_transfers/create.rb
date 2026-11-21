@@ -124,7 +124,7 @@ module Spree
       # no payout sweep can release it until the operator configures a period.
       def release_at_for_earning
         days = order.store.preferred_creator_earnings_hold_days
-        days.nil? ? nil : (order.fulfilled_at || Time.current) + days.days
+        days.nil? ? nil : (order.fulfillments.where(status: %w[fulfilled delivered]).maximum(:fulfilled_at) || Time.current) + days.days
       end
 
       def provider
