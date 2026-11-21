@@ -10,6 +10,20 @@ class DisablePhysicalSellerOnboardingRequirements < ActiveRecord::Migration[8.1]
   ].freeze
 
   def up
+    return unless table_exists?(:spree_stores)
+
+    # This branch is the dedicated digital-only marketplace deployment:
+    # enable creator media uploads and immediate listing publication once a
+    # creator has been approved. Creator admission itself remains manual.
+    Spree::Store.find_each do |store|
+      store.preferred_digital_creator_marketplace_enabled = true
+      store.preferred_seller_digital_assets_enabled = true
+      store.preferred_auto_approve_seller_products = true
+      store.preferred_seller_digital_asset_content_types =
+        Spree::DigitalAsset::CREATOR_MARKETPLACE_CONTENT_TYPES
+      store.save!
+    end
+
     return unless table_exists?(:spree_seller_requirements)
 
     execute <<~SQL
