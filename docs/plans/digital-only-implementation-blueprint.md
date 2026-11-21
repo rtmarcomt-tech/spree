@@ -400,3 +400,12 @@ Validation limitation: specs have been added but have not been run in a local ch
 - Applied the predicate after buyer catalog/context resolution in the v3 storefront product scope. Product index, direct ID/slug lookup, search-provider product results and the filters endpoint therefore inherit the same eligible relation.
 - Applied the same predicate to `SalesContext#orderable_variants`, which is the common variant eligibility path used by carts and checkout. An ineligible creator listing cannot be added to a cart through the normal sales-context path.
 - Remaining validation work: add focused database/request specs for mixed seller ownership, pending/rejected/latest-version media, replacement blobs, search and facets; inspect every alternate admin/draft-order path; and execute the prescribed test suite. These changes have not yet been run locally.
+
+
+### Visibility predicate hardening and regression coverage
+
+- Corrected the latest-version subquery to compare version primary keys (rather than accidentally comparing version IDs to asset IDs).
+- The catalog predicate now also requires the approved revision's Active Storage blob to match the asset's current attachment at query time.
+- Corrected the version/store consistency validation to resolve the store through `DigitalAsset#store`; DigitalAsset does not own a `store_id` column.
+- Added focused model coverage for products without digital assets, pending media, approved current media and a replaced current blob.
+- Tests remain unexecuted in a local checkout; the suite must run through `scripts/test/`.
