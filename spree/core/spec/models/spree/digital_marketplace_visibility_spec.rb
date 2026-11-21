@@ -6,7 +6,7 @@ RSpec.describe Spree::Product, type: :model do
     let(:asset) { create(:digital_asset, variant: product.default_variant) }
     let(:blob) { asset.attachment.blob }
     let!(:version) do
-      Spree::DigitalAssetVersion.create!(
+      Spree::DigitalAssetVersion.new(
         store: product.store,
         digital_asset: asset,
         version_number: 1,
@@ -15,7 +15,7 @@ RSpec.describe Spree::Product, type: :model do
         byte_size: blob.byte_size,
         status: 'pending',
         submitted_at: Time.current
-      ).tap { |record| record.attachment.attach(blob) }
+      ).tap { |record| record.attachment.attach(blob); record.save! }
     end
 
     before do
