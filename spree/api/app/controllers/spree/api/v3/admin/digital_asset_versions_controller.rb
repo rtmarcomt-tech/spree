@@ -31,7 +31,7 @@ module Spree
               )
             end
 
-            versions = current_store.digital_asset_versions.
+            versions = Spree::DigitalAssetVersion.where(store_id: current_store.id).
               includes(:digital_asset, :moderations).
               where(status: status).
               order(submitted_at: :asc)
@@ -79,7 +79,7 @@ module Spree
           private
 
           def set_resource
-            @resource = current_store.digital_asset_versions.find_by_param!(params[:id])
+            @resource = Spree::DigitalAssetVersion.where(store_id: current_store.id).find_by_param!(params[:id])
           end
 
           def decide(decision)
