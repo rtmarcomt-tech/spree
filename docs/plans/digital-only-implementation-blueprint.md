@@ -409,3 +409,12 @@ Validation limitation: specs have been added but have not been run in a local ch
 - Corrected the version/store consistency validation to resolve the store through `DigitalAsset#store`; DigitalAsset does not own a `store_id` column.
 - Added focused model coverage for products without digital assets, pending media, approved current media and a replaced current blob.
 - Tests remain unexecuted in a local checkout; the suite must run through `scripts/test/`.
+
+
+### Admin moderation API added
+
+- Added store-scoped `GET /api/v3/admin/digital_asset_versions` with a pending-by-default queue and optional status filter.
+- Added `GET /api/v3/admin/digital_asset_versions/:id`, plus administrator `PATCH .../:id/approve` and `PATCH .../:id/reject`.
+- Decisions are routed through the domain moderation workflow, require the authenticated staff user, and preserve reason code, notes, reviewer and timestamp.
+- The API queries revisions by the active store rather than trusting a client-supplied store or asset ID.
+- The dashboard still needs a moderation queue screen and action controls; endpoint request specs and route/policy verification remain outstanding. No local test run has been performed.
