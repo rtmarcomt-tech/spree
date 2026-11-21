@@ -21,7 +21,7 @@ module Spree
         end
 
         def scope_includes
-          [:variant, { attachment_attachment: :blob }]
+          [:variant, :versions, { attachment_attachment: :blob }]
         end
 
         # Not normalized: `provider_settings` may hold values shaped like
