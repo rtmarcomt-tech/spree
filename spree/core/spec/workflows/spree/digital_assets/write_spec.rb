@@ -29,7 +29,7 @@ RSpec.describe 'Spree::DigitalAssets write workflows' do
       expect(result.value.filename).to eq('manual.pdf')
       expect(result.value.authorized_clicks).to eq(3)
       version = result.value.versions.sole
-      expect(version).to have_attributes(version_number: 1, status: 'pending', content_type: 'image/jpeg')
+      expect(version).to have_attributes(version_number: 1, status: 'pending', content_type: 'application/pdf')
       expect(version.attachment.blob).to eq(result.value.attachment.blob)
       expect(result.value.moderations.sole).to have_attributes(decision: 'pending', digital_asset_version: version)
     end
