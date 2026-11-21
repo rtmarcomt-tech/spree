@@ -326,14 +326,14 @@ module Spree
           SQL
           where(id: Spree::DigitalAssetModeration.where(decision: 'approved').
             select(:digital_asset_version_id)).
-          select(:digital_asset_id)
+          select(:id)
 
         assets = Spree::DigitalAsset.arel_table
         versions = Spree::DigitalAssetVersion.arel_table
         attachments = ActiveStorage::Attachment.quoted_table_name
         approved_asset_ids = Spree::DigitalAsset.
           joins(:versions).
-          where(id: latest_approved_versions).
+          where(Spree::DigitalAssetVersion.table_name => { id: latest_approved_versions }).
           joins(<<~SQL.squish).
             INNER JOIN #{attachments} current_asset_files
               ON current_asset_files.record_type = 'Spree::DigitalAsset'
