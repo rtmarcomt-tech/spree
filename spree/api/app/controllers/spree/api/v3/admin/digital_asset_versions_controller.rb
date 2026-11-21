@@ -5,7 +5,7 @@ module Spree
         # Operator review of uploaded creator deliverables. Every decision is
         # made against one store-scoped, immutable upload revision.
         class DigitalAssetVersionsController < ResourceController
-          before_action :set_resource, only: [:show, :approve, :reject]
+          before_action :set_resource, only: [:show, :preview, :approve, :reject]
 
           request_params 'DigitalAssetVersionDecisionParams', action: :approve do |body|
             body.attribute :reason_code, :string
@@ -42,6 +42,11 @@ module Spree
                   id: version.prefixed_id,
                   digital_asset_id: version.digital_asset.prefixed_id,
                   product_id: version.digital_asset.product.prefixed_id,
+                  product_title: version.digital_asset.product.name,
+                  seller_id: version.digital_asset.product.seller&.prefixed_id,
+                  seller_name: version.digital_asset.product.seller&.name,
+                  file_name: version.attachment.filename.to_s,
+                  preview_url: "/api/v3/admin/digital_asset_versions/#{version.prefixed_id}/preview",
                   version_number: version.version_number,
                   status: version.status,
                   content_type: version.content_type,
@@ -64,6 +69,27 @@ module Spree
           def show
             authorize! :read, @resource.digital_asset.product
             render_version
+          end
+
+          # Streams the exact private revision to an authenticated operator.
+          # No Active Storage public URL or long-lived signed URL is exposed.
+          def preview
+            authorize! :read, @resource.digital_asset.product
+
+            unless @resource.attachment.attached?
+              return render_error(
+                code: ERROR_CODES[:not_found],
+                message: 'Digital asset revision file not found',
+                status: :not_found
+              )
+            end
+
+            response.headers['X-Content-Type-Options'] = 'nosniff'
+            response.headers['Content-Security-Policy'] = "default-src 'none'; sandbox"
+            send_data @resource.attachment.download,
+                      type: @resource.content_type,
+                      disposition: 'inline',
+                      filename: @resource.attachment.filename.to_s
           end
 
           def approve
