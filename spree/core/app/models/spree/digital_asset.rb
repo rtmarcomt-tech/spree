@@ -17,6 +17,10 @@ module Spree
 
     belongs_to :variant, class_name: 'Spree::Variant'
     has_many :digital_links, class_name: 'Spree::DigitalLink', dependent: :destroy
+    has_many :versions, class_name: 'Spree::DigitalAssetVersion', dependent: :restrict_with_error,
+                        inverse_of: :digital_asset
+    has_many :moderations, class_name: 'Spree::DigitalAssetModeration', dependent: :restrict_with_error,
+                           inverse_of: :digital_asset
 
     has_one_attached :attachment, service: Spree.private_storage_service_name
 
