@@ -1,0 +1,115 @@
+module Spree
+  module Api
+    module V3
+      module Admin
+        # Operator review of uploaded creator deliverables. Every decision is
+        # made against one store-scoped, immutable upload revision.
+        class DigitalAssetVersionsController < BaseController
+          before_action :set_resource, only: [:show, :approve, :reject]
+
+          request_params 'DigitalAssetVersionDecisionParams', action: :approve do |body|
+            body.attribute :reason_code, :string
+            body.attribute :notes, :string
+          end
+
+          request_params 'DigitalAssetVersionDecisionParams', action: :reject do |body|
+            body.attribute :reason_code, :string, required: true
+            body.attribute :notes, :string
+          end
+
+          # GET /api/v3/admin/digital_asset_versions?status=pending
+          # The queue is store-scoped and defaults to pending reviews.
+          def index
+            authorize! :read, Spree::DigitalAssetVersion
+
+            status = params[:status].presence || 'pending'
+            unless Spree::DigitalAssetVersion::STATUSES.include?(status)
+              return render_error(
+                code: ERROR_CODES[:invalid_resource],
+                message: 'Unsupported digital asset version status',
+                status: :unprocessable_entity
+              )
+            end
+
+            versions = current_store.digital_asset_versions.
+              includes(:digital_asset, :moderations).
+              where(status: status).
+              order(submitted_at: :asc)
+
+            render json: {
+              data: versions.map do |version|
+                {
+                  id: version.prefixed_id,
+                  digital_asset_id: version.digital_asset.prefixed_id,
+                  product_id: version.digital_asset.product.prefixed_id,
+                  version_number: version.version_number,
+                  status: version.status,
+                  content_type: version.content_type,
+                  byte_size: version.byte_size,
+                  submitted_at: version.submitted_at,
+                  moderation_history: version.moderations.latest_first.map do |decision|
+                    {
+                      decision: decision.decision,
+                      reason_code: decision.reason_code,
+                      notes: decision.notes,
+                      decided_at: decision.decided_at,
+                      reviewer_id: decision.reviewed_by_admin_user&.prefixed_id
+                    }
+                  end
+                }
+              end
+            }
+          end
+
+          def show
+            authorize! :read, @resource
+            render_version
+          end
+
+          def approve
+            authorize! :update, @resource
+            decide('approved')
+          end
+
+          def reject
+            authorize! :update, @resource
+            decide('rejected')
+          end
+
+          private
+
+          def set_resource
+            @resource = current_store.digital_asset_versions.find_by_param!(params[:id])
+          end
+
+          def decide(decision)
+            result = Spree::DigitalAssets::Moderate.call(
+              digital_asset_version: @resource,
+              decision: decision,
+              reviewer: try_spree_current_user,
+              reason_code: params[:reason_code],
+              notes: params[:notes]
+            )
+
+            return render_service_error(result.error) unless result.success?
+
+            @resource.reload
+            render_version
+          end
+
+          def render_version
+            render json: {
+              data: {
+                id: @resource.prefixed_id,
+                digital_asset_id: @resource.digital_asset.prefixed_id,
+                version_number: @resource.version_number,
+                status: @resource.status,
+                submitted_at: @resource.submitted_at
+              }
+            }
+          end
+        end
+      end
+    end
+  end
+end
