@@ -16,12 +16,6 @@ class DisablePhysicalSellerOnboardingRequirements < ActiveRecord::Migration[8.1]
       WHERE type IN (#{PHYSICAL_REQUIREMENTS.map { |type| connection.quote(type) }.join(', ')})
     SQL
 
-    # Existing marketplaces need the same digital-only checklist as stores
-    # created after this release. The provisioning method is idempotent and
-    # skips requirement kinds not registered by this installation.
-    Spree::Store.find_each do |store|
-      Spree::SellerRequirement.provision_defaults(store)
-    end
   end
 
   def down
