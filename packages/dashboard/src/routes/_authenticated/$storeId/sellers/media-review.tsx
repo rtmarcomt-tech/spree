@@ -124,10 +124,11 @@ function CreatorMediaReviewPage() {
   })
 
   const decision = useMutation({
-    mutationFn: async ({ id }: { id: string }) => adminClient.digitalAssetVersions.remove(id, {
-      reason_code: reasonCode.trim(),
-      notes: notes.trim() || undefined,
-    }),
+    mutationFn: async ({ id }: { id: string }) =>
+      adminClient.digitalAssetVersions.remove(id, {
+        reason_code: reasonCode.trim(),
+        notes: notes.trim() || undefined,
+      }),
     onSuccess: async () => {
       setSelectedId(null)
       setNotes('')
