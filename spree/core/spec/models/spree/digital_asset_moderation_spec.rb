@@ -5,7 +5,6 @@ RSpec.describe Spree::DigitalAssetModeration, type: :model do
   let(:store) { digital_asset.store }
   let(:version) do
     blob = digital_asset.attachment.blob
-    record = described_class::DigitalAssetVersion rescue nil
     Spree::DigitalAssetVersion.create!(
       store: store,
       digital_asset: digital_asset,
