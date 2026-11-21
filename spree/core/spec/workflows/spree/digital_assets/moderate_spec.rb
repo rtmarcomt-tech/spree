@@ -6,7 +6,7 @@ RSpec.describe Spree::DigitalAssets::Moderate do
   let(:reviewer) { create(:admin_user) }
   let(:version) do
     blob = digital_asset.attachment.blob
-    Spree::DigitalAssetVersion.create!(
+    Spree::DigitalAssetVersion.new(
       store: store,
       digital_asset: digital_asset,
       version_number: 1,
@@ -15,7 +15,7 @@ RSpec.describe Spree::DigitalAssets::Moderate do
       byte_size: blob.byte_size,
       status: 'pending',
       submitted_at: Time.current
-    ).tap { |item| item.attachment.attach(blob) }
+    ).tap { |item| item.attachment.attach(blob); item.save! }
   end
 
   before do
@@ -73,8 +73,8 @@ RSpec.describe Spree::DigitalAssets::Moderate do
   it 'does not allow a stale version to be approved after a replacement upload' do
     newer = version.dup
     newer.version_number = 2
-    newer.save!
     newer.attachment.attach(version.attachment.blob)
+    newer.save!
 
     result = described_class.call(
       digital_asset_version: version,
