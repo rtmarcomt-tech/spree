@@ -5,7 +5,7 @@ RSpec.describe 'seller requirement kinds', type: :model do
   let(:seller) { create(:seller, store: store) }
 
   describe Spree::SellerRequirements::AcceptTerms do
-    let(:requirement) { create(:accept_terms_requirement, store: store) }
+    let(:requirement) { store.seller_requirements.find_by(type: 'Spree::SellerRequirements::AcceptTerms') || create(:accept_terms_requirement, store: store) }
     let(:terms_policy) do
       store.policies.with_matching_name(I18n.t('spree.terms_of_service')).first ||
         store.policies.create!(name: I18n.t('spree.terms_of_service'))
@@ -124,7 +124,7 @@ RSpec.describe 'seller requirement kinds', type: :model do
   end
 
   describe Spree::SellerRequirements::CompleteProfile do
-    let(:requirement) { create(:complete_profile_requirement, store: store) }
+    let(:requirement) { store.seller_requirements.find_by(type: 'Spree::SellerRequirements::CompleteProfile') || create(:complete_profile_requirement, store: store) }
 
     it 'asks for the fields the operator ticked' do
       requirement.update!(preferred_require_about: true, preferred_require_logo: false)
@@ -176,7 +176,7 @@ RSpec.describe 'seller requirement kinds', type: :model do
   end
 
   describe Spree::SellerRequirements::BillingAddress do
-    let(:requirement) { create(:billing_address_requirement, store: store) }
+    let(:requirement) { store.seller_requirements.find_by(type: 'Spree::SellerRequirements::BillingAddress') || create(:billing_address_requirement, store: store) }
 
     it 'is met once an address is saved' do
       expect(requirement.satisfied?(seller)).to be false
@@ -188,7 +188,7 @@ RSpec.describe 'seller requirement kinds', type: :model do
   end
 
   describe Spree::SellerRequirements::Policy do
-    let(:requirement) { create(:policy_requirement, store: store) }
+    let(:requirement) { store.seller_requirements.find_by(type: 'Spree::SellerRequirements::Policy') || create(:policy_requirement, store: store) }
 
     it 'is met once the seller publishes the document it names' do
       expect(requirement.satisfied?(seller)).to be false
@@ -241,7 +241,7 @@ RSpec.describe 'seller requirement kinds', type: :model do
   end
 
   describe Spree::SellerRequirements::MinimumProducts do
-    let(:requirement) { create(:minimum_products_requirement, store: store) }
+    let(:requirement) { store.seller_requirements.find_by(type: 'Spree::SellerRequirements::MinimumProducts') || create(:minimum_products_requirement, store: store) }
 
     it 'counts the seller’s own listings' do
       expect(requirement.satisfied?(seller)).to be false
@@ -266,7 +266,7 @@ RSpec.describe 'seller requirement kinds', type: :model do
   end
 
   describe Spree::SellerRequirements::DeliveryMethod do
-    let(:requirement) { create(:delivery_method_requirement, store: store) }
+    let(:requirement) { store.seller_requirements.find_by(type: 'Spree::SellerRequirements::DeliveryMethod') || create(:delivery_method_requirement, store: store) }
 
     it 'is unmet while nothing can ship the seller’s goods' do
       expect(requirement.satisfied?(seller)).to be false
@@ -300,7 +300,7 @@ RSpec.describe 'seller requirement kinds', type: :model do
   # Measurements, not merely a row: a default box with blank sides quotes the
   # goods alone (docs/plans/6.0-seller-package-types.md).
   describe Spree::SellerRequirements::PackageType do
-    let(:requirement) { create(:package_type_requirement, store: store) }
+    let(:requirement) { store.seller_requirements.find_by(type: 'Spree::SellerRequirements::PackageType') || create(:package_type_requirement, store: store) }
 
     it 'is unmet while the seller has recorded no box' do
       expect(requirement.satisfied?(seller)).to be false
@@ -348,7 +348,7 @@ RSpec.describe 'seller requirement kinds', type: :model do
   end
 
   describe Spree::SellerRequirements::RequiredCustomFields do
-    let(:requirement) { create(:required_custom_fields_requirement, store: store) }
+    let(:requirement) { store.seller_requirements.find_by(type: 'Spree::SellerRequirements::RequiredCustomFields') || create(:required_custom_fields_requirement, store: store) }
 
     it 'asks nothing while the operator has named no fields' do
       expect(requirement.satisfied?(seller)).to be true
@@ -396,7 +396,7 @@ RSpec.describe 'seller requirement kinds', type: :model do
   end
 
   describe Spree::SellerRequirements::Document do
-    let(:requirement) { create(:document_requirement, store: store) }
+    let(:requirement) { store.seller_requirements.find_by(type: 'Spree::SellerRequirements::Document') || create(:document_requirement, store: store) }
 
     it 'is not met by an accepted submission carrying no file' do
       create(:seller_requirement_submission, :accepted, seller: seller, requirement: requirement)
@@ -417,7 +417,7 @@ RSpec.describe 'seller requirement kinds', type: :model do
     end
   end
   describe Spree::SellerRequirements::ReturnsAddress do
-    let(:requirement) { create(:returns_address_requirement, store: store) }
+    let(:requirement) { store.seller_requirements.find_by(type: 'Spree::SellerRequirements::ReturnsAddress') || create(:returns_address_requirement, store: store) }
 
     # A location with no address on it tells a shopper nothing about where to
     # post the parcel, so having the row is not the same as being ready.
