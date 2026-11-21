@@ -59,7 +59,8 @@ module Spree
           currency: order.currency,
           kind: 'earning',
           provider: provider_name,
-          status: 'pending'
+          status: 'pending',
+          release_at: release_at_for_earning
         )
       rescue ActiveRecord::RecordNotUnique
         # Another delivery of the same event got there first; the unique index
@@ -117,6 +118,13 @@ module Spree
         # charged, and money leaving the platform is settled against the
         # settlement records themselves.
         [base - order.commission_lines.sum(:total).to_d, 0].max
+      end
+
+      # A missing store setting is fail-closed: the earning is recorded, but
+      # no payout sweep can release it until the operator configures a period.
+      def release_at_for_earning
+        days = order.store.preferred_creator_earnings_hold_days
+        days.nil? ? nil : (order.fulfilled_at || Time.current) + days.days
       end
 
       def provider
