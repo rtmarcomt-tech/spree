@@ -483,6 +483,7 @@ module Spree
     before_save :set_install_id
     after_create :create_default_policies
     after_create :create_default_delivery_profile
+    after_create { |store| Spree::SellerRequirement.provision_defaults(store) }
 
     #
     # Scopes
