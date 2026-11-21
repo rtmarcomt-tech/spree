@@ -27,7 +27,7 @@ module Spree
             end
 
             versions = Spree::DigitalAssetVersion.where(store_id: current_store.id).
-              includes(:attachment, digital_asset: [:attachment, { variant: { product: :seller } }], moderations: :reviewed_by_admin_user).
+              includes(:attachment, digital_asset: [:attachment, :versions, { variant: { product: :seller } }], moderations: :reviewed_by_admin_user).
               where(status: status).
               order(submitted_at: :asc)
 
