@@ -12,8 +12,8 @@ module Spree
             body.attribute :notes, :string
           end
 
-          # GET /api/v3/admin/digital_asset_versions?status=pending
-          # The queue is store-scoped and defaults to pending reviews.
+          # GET /api/v3/admin/digital_asset_versions?status=published
+          # The publication list is store-scoped and defaults to published content.
           def index
             authorize! :read, Spree::Product
 
