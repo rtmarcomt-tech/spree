@@ -92,9 +92,9 @@ function AuthenticatedMediaPreview({ item }: { item: PreviewItem }) {
     )
   }
   if (item.content_type.startsWith('video/')) {
-    // Uploaded source videos may not include caption files; reviewers must inspect the original media.
-    // biome-ignore lint/a11y/useMediaCaption: source uploads are reviewed as submitted and have no generated caption track.
+    // Uploaded source videos may not include caption files; reviewers inspect the original media.
     return (
+      // biome-ignore lint/a11y/useMediaCaption: source uploads are reviewed as submitted and have no generated caption track.
       <video src={objectUrl} controls playsInline className="max-h-[480px] max-w-full rounded-md" />
     )
   }
@@ -170,7 +170,11 @@ function CreatorMediaReviewPage() {
       {queue.isLoading ? (
         <p className="text-sm text-muted-foreground">Loading pending uploads…</p>
       ) : items.length === 0 ? (
-        <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">There are no uploads waiting for review.</CardContent></Card>
+        <Card>
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            There are no uploads waiting for review.
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-4">
           {items.map((item) => (
@@ -178,10 +182,12 @@ function CreatorMediaReviewPage() {
               <CardHeader>
                 <CardTitle className="text-base">{item.file_name}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Creator: {item.seller_name || 'Unassigned'} · Product: {item.product_title} · Revision {item.version_number}
+                  Creator: {item.seller_name || 'Unassigned'} · Product: {item.product_title} ·
+                  Revision {item.version_number}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {item.content_type} · {(item.byte_size / 1024 / 1024).toFixed(2)} MB · Submitted {new Date(item.submitted_at).toLocaleString()}
+                  {item.content_type} · {(item.byte_size / 1024 / 1024).toFixed(2)} MB · Submitted{' '}
+                  {new Date(item.submitted_at).toLocaleString()}
                 </p>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
@@ -190,9 +196,18 @@ function CreatorMediaReviewPage() {
                 {selectedId === item.id && (
                   <div className="grid gap-2 rounded-md border p-3">
                     <Label htmlFor={`reason-${item.id}`}>Rejection reason code</Label>
-                    <Input id={`reason-${item.id}`} value={reasonCode} onChange={(event) => setReasonCode(event.target.value)} />
+                    <Input
+                      id={`reason-${item.id}`}
+                      value={reasonCode}
+                      onChange={(event) => setReasonCode(event.target.value)}
+                    />
                     <Label htmlFor={`notes-${item.id}`}>Review notes</Label>
-                    <Textarea id={`notes-${item.id}`} value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} />
+                    <Textarea
+                      id={`notes-${item.id}`}
+                      value={notes}
+                      onChange={(event) => setNotes(event.target.value)}
+                      rows={3}
+                    />
                     <div className="flex flex-wrap gap-2">
                       <Button
                         variant="destructive"
@@ -201,13 +216,22 @@ function CreatorMediaReviewPage() {
                       >
                         Confirm rejection
                       </Button>
-                      <Button variant="outline" disabled={decision.isPending} onClick={() => setSelectedId(null)}>Cancel</Button>
+                      <Button
+                        variant="outline"
+                        disabled={decision.isPending}
+                        onClick={() => setSelectedId(null)}
+                      >
+                        Cancel
+                      </Button>
                     </div>
                   </div>
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                  <Button disabled={decision.isPending || selectedId !== null} onClick={() => decision.mutate({ id: item.id, approve: true })}>
+                  <Button
+                    disabled={decision.isPending || selectedId !== null}
+                    onClick={() => decision.mutate({ id: item.id, approve: true })}
+                  >
                     Approve revision
                   </Button>
                   <Button
