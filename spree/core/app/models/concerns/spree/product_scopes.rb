@@ -314,11 +314,9 @@ module Spree
       # A product must have at least one digital asset; every attached asset
       # must have a current, explicitly approved revision.
       def self.digital_marketplace_visible
-        # Seller IDs are globally unique; derive eligibility from the product relation's store,
-        # not ambient request state (SalesContext can be evaluated outside a controller).
-        approved_sellers = Spree::Seller.sellable.select(:id)
-        latest_approved_versions = Spree::DigitalAssetVersion.
-          where(status: 'approved').
+        sellable_sellers = Spree::Seller.sellable.select(:id)
+        latest_published_versions = Spree::DigitalAssetVersion.
+          where(status: 'published').
           where(<<~SQL.squish).
             spree_digital_asset_versions.version_number = (
               SELECT MAX(latest_versions.version_number)
@@ -326,31 +324,28 @@ module Spree
               WHERE latest_versions.digital_asset_id = spree_digital_asset_versions.digital_asset_id
             )
           SQL
-          where(id: Spree::DigitalAssetModeration.where(decision: 'approved').
-            select(:digital_asset_version_id)).
           select(:id)
 
         assets = Spree::DigitalAsset.arel_table
         versions = Spree::DigitalAssetVersion.arel_table
         attachments = ActiveStorage::Attachment.quoted_table_name
-        approved_asset_ids = Spree::DigitalAsset.
+        published_asset_ids = Spree::DigitalAsset.
           joins(:versions).
-          where(Spree::DigitalAssetVersion.table_name => { id: latest_approved_versions }).
+          where(Spree::DigitalAssetVersion.table_name => { id: latest_published_versions }).
           joins(<<~SQL.squish).
             INNER JOIN #{attachments} current_asset_files
               ON current_asset_files.record_type = 'Spree::DigitalAsset'
              AND current_asset_files.record_id = #{assets.name}.id
              AND current_asset_files.name = 'attachment'
-            INNER JOIN #{attachments} approved_version_files
-              ON approved_version_files.record_type = 'Spree::DigitalAssetVersion'
-             AND approved_version_files.record_id = #{versions.name}.id
-             AND approved_version_files.name = 'attachment'
-             AND approved_version_files.blob_id = current_asset_files.blob_id
+            INNER JOIN #{attachments} published_version_files
+              ON published_version_files.record_type = 'Spree::DigitalAssetVersion'
+             AND published_version_files.record_id = #{versions.name}.id
+             AND published_version_files.name = 'attachment'
+             AND published_version_files.blob_id = current_asset_files.blob_id
           SQL
           select("#{assets.name}.id")
 
-        seller_ids_sql = approved_sellers.to_sql
-
+        seller_ids_sql = sellable_sellers.to_sql
         joins(:digital_assets).
           where(<<~SQL.squish).
             (#{table_name}.seller_id IS NULL OR #{table_name}.seller_id IN (#{seller_ids_sql}))
@@ -362,9 +357,9 @@ module Spree
                 AND seller_variants.seller_id NOT IN (#{seller_ids_sql})
             )
           SQL
-          where(Spree::DigitalAsset.table_name => { id: approved_asset_ids }).
+          where(Spree::DigitalAsset.table_name => { id: published_asset_ids }).
           where.not(id: joins(:digital_assets).
-            where.not(Spree::DigitalAsset.table_name => { id: approved_asset_ids }).
+            where.not(Spree::DigitalAsset.table_name => { id: published_asset_ids }).
             select(:id)).
           distinct
       end
