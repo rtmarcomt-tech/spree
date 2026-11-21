@@ -13,7 +13,7 @@ class DisablePhysicalSellerOnboardingRequirements < ActiveRecord::Migration[8.1]
     execute <<~SQL
       UPDATE spree_seller_requirements
       SET active = #{quoted_false}
-      WHERE type IN (#{PHYSICAL_REQUIREMENTS.map { |type| quote(type) }.join(', ')})
+      WHERE type IN (#{PHYSICAL_REQUIREMENTS.map { |type| connection.quote(type) }.join(', ')})
     SQL
   end
 
