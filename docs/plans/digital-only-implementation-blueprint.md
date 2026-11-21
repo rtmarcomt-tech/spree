@@ -418,3 +418,13 @@ Validation limitation: specs have been added but have not been run in a local ch
 - Decisions are routed through the domain moderation workflow, require the authenticated staff user, and preserve reason code, notes, reviewer and timestamp.
 - The API queries revisions by the active store rather than trusting a client-supplied store or asset ID.
 - The dashboard still needs a moderation queue screen and action controls; endpoint request specs and route/policy verification remain outstanding. No local test run has been performed.
+
+
+### Creator onboarding made digital-only
+
+- The default seller checklist now contains terms acceptance, creator profile, billing address and initial listing.
+- Returns address, delivery method and package type have been removed from the default checklist.
+- A forward migration deactivates those three physical-fulfilment requirements on existing stores without deleting their historical submissions.
+- Identity/age evidence, rights ownership and consent are intentionally represented by operator-configured Document, Attestation and OperatorReview requirements. The exact evidence and wording must be set by the marketplace before creator onboarding is opened.
+- DigitalAssetVersion upload identity fields are now immutable after creation; moderation may change only its review status.
+- Admin moderation authorization is delegated to existing product read/update permissions, avoiding a new unregistered permission family.
