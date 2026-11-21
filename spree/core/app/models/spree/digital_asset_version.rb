@@ -19,6 +19,7 @@ module Spree
     IMMUTABLE_ATTRIBUTES = %w[digital_asset_id store_id version_number checksum content_type byte_size submitted_at].freeze
 
     before_update :prevent_upload_identity_changes!
+    before_update :prevent_replacing_uploaded_attachment!
 
     validates :version_number, numericality: { only_integer: true, greater_than: 0 }
     validates :checksum, :content_type, presence: true
@@ -38,6 +39,16 @@ module Spree
       return if changed.empty?
 
       raise ActiveRecord::ReadOnlyRecord, "Uploaded revision identity is immutable: #{changed.join(', ')}"
+    end
+
+    # A revision may receive its original private blob after its row is
+    # created, but an existing revision must never be repointed at new bytes.
+    # A replacement is a new DigitalAssetVersion and therefore a new review.
+    def prevent_replacing_uploaded_attachment!
+      return unless attachment_changes.key?('attachment')
+      return unless attachment.attached?
+
+      raise ActiveRecord::ReadOnlyRecord, 'Uploaded revision attachment is immutable'
     end
 
     def asset_belongs_to_same_store
