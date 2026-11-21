@@ -55,14 +55,15 @@ module Spree
       def enforce_seller_rules
         return if seller.nil?
 
-        refuse(:digital_assets_sellers_disabled) unless store.preferred_seller_digital_assets_enabled
+        marketplace = store.preferred_digital_creator_marketplace_enabled
+        refuse(:digital_assets_sellers_disabled) unless store.preferred_seller_digital_assets_enabled || marketplace
         return if blob.nil?
 
         # Identifying reads the file's own signature where it has one, so a
         # renamed executable cannot pass as a PDF; a format with no signature
         # (plain text) keeps the type the client declared.
         blob.identify_without_saving
-        return if content_type_accepted?(blob.content_type)
+        return if marketplace ? Spree::DigitalAsset::CREATOR_MARKETPLACE_CONTENT_TYPES.include?(blob.content_type) : content_type_accepted?(blob.content_type)
 
         refuse(:digital_assets_content_type_not_accepted, content_type: blob.content_type)
       end
