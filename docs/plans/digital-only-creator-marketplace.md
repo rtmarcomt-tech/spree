@@ -408,3 +408,55 @@ Wave 0 is still **partially complete**. The creator event and payment state foun
 5. Finalize the migration, test matrix and smallest coherent implementation sequence.
 
 No production feature code has been changed in this audit step.
+
+
+## Wave 0 source audit — public catalogue and seller application surfaces
+
+### 12. Public seller profiles are filtered, but public product queries do not explicitly enforce seller sellability
+
+- `GET /api/v3/store/sellers` scopes profiles through `Seller#sellable`, which means approved and not currently in holiday mode.
+- `GET /api/v3/store/products` scopes products through the storefront availability/channel/catalog resolver. The inspected `StorefrontProducts` concern requires an active product and a valid channel publication, but it does not explicitly join/filter the owning seller through `Seller#sellable`.
+- The storefront product serializer includes the seller identity/profile when expanded, but serialization is not an authorization or visibility gate.
+- Suspending a seller changes the seller status; the suspension workflow does not itself archive all of that seller's products.
+
+**Implementation consequence:** add a server-side seller-sellability condition to every public product read and purchase path, including slug lookup, prefixed-ID lookup, search, filters, cart add/update and checkout revalidation. A suspended, rejected, unapproved or holiday seller must not have publicly purchasable content even if an old product row remains active and published. Test direct-ID access and cart replay, not only the discovery list.
+
+### 13. Existing seller dashboard is a physical-commerce interface, not a digital creator studio
+
+The current seller dashboard includes:
+
+- Onboarding checklist and profile/address forms.
+- Product list and product editor built from shared operator form cards.
+- A product editor that exposes categorization, delivery profile, inventory, variants, prices, media and digital assets.
+- Separate delivery-method and package-type pages.
+- Orders, earnings and payout screens.
+- Existing product submission actions and product status review UI.
+
+The seller product form explicitly exposes a delivery profile and inventory/stock cards. The onboarding page renders requirements dynamically, but the default checklist includes shipping and parcel requirements. The delivery-method page exists as a full CRUD surface. These screens are useful foundations, but cannot simply be relabeled as creator pages.
+
+**Implementation consequence:** adapt the existing seller dashboard rather than build a second authentication/application shell. Replace the physical product form with a creator content form: title/description, approved preview, private original upload, photo/video metadata, free/paid selection, individual price and moderation state. Remove delivery methods, package types, stock locations, shipping, physical fulfillment and inventory controls from creator-facing navigation and APIs. Keep earnings/payouts, profile, team and seller-scoped authentication where appropriate.
+
+### 14. Three independent publication gates are required
+
+The inspected code currently provides separate seller status, product review status and product publication/channel state. It does not provide one atomic marketplace-specific gate combining creator verification, product review and per-media moderation.
+
+**Implementation consequence:** public availability and cart/checkout validation must require all of the following at the time of access/purchase:
+
+1. Seller is approved and sellable (not suspended, rejected, onboarding, or on holiday).
+2. Product is active, approved by review, published on the current channel and otherwise available.
+3. Every required digital asset and preview is approved, current and not quarantined.
+
+The same predicate must be applied to public discovery, product detail by slug/ID, search provider indexing, add-to-cart, cart updates, checkout completion and digital-link delivery. Delivery must also re-check the entitlement and media's current access policy.
+
+### Updated Wave 0 gate
+
+Wave 0 remains **partially complete**. Public catalogue and seller UI have now been inspected. A concrete visibility gap is confirmed: public product lookup does not explicitly apply the seller's `sellable` scope, while the public seller-profile endpoint does. This must be closed before launch.
+
+Remaining before implementation:
+
+1. Inspect all search-provider indexing and catalog cache invalidation paths, then define the shared public-availability predicate.
+2. Inspect exact seller/admin onboarding requirement configuration and the existing media/upload APIs, then freeze the adapted screens and permissions.
+3. Finalize PayPal capture intent, the held-earnings release predicate and the payout/refund/dispute state matrix.
+4. Complete the migration and end-to-end test matrix for the digital-only constraints and visibility gates.
+
+No production feature code has been changed in this audit step.
