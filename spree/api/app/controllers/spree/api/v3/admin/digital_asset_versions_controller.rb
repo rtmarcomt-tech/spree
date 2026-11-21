@@ -72,7 +72,7 @@ module Spree
           end
 
           def reject
-            authorize! :update, @resource
+            authorize! :update, @resource.digital_asset.product
             decide('rejected')
           end
 
