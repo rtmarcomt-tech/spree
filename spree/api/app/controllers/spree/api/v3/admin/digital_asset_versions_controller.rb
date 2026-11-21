@@ -103,6 +103,10 @@ module Spree
             render_version
           end
 
+          def model_class
+            Spree::DigitalAssetVersion
+          end
+
           private
 
           def set_resource
