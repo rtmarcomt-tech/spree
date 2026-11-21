@@ -343,3 +343,68 @@ Wave 0 is **partially complete**. The core free-checkout, digital delivery, sell
 5. Produce the migration and test matrix for the release timestamp, moderation/quarantine state and digital-only server-side constraints.
 
 No production feature code has been changed in this audit step.
+
+
+## Wave 0 source audit — event, payment and onboarding findings
+
+### 8. Seller earning creation and refund reversal are event-driven
+
+- `Spree::SellerTransferSubscriber` subscribes only to `order.fulfilled` and calls `Spree.seller_transfer_create_workflow` asynchronously. It ignores the legacy `order.shipped` alias to avoid double handling.
+- The workflow creates one earning per seller order and is idempotent by the unique earning/order constraint.
+- `Spree::SellerTransferReversalSubscriber` listens to `refund.created` and `payment.refunded`. It reverses only completed refunds, and the reversal workflow is keyed to the refund.
+- A refund before an earning is credited produces no reversal because there is no earning yet. A refund after credit creates a separate negative ledger row; it does not rewrite the earning.
+
+**Implementation consequence:** the holding-period extension must integrate with these existing events and preserve refund idempotency. It must handle the race where a refund is requested before the hold expires but only completes after the release timestamp. Payout eligibility must query the current completed refund/dispute state at sweep time, not rely only on a snapshot captured when the earning was created.
+
+### 9. PayPal's persisted payment state distinguishes authorization from captured funds
+
+- The PayPal checkout provider creates a payment session only for a strictly positive amount; a zero amount is rejected by PayPal itself. This is consistent with Spree's free checkout bypass.
+- The provider's completion flow verifies the PayPal order and either captures or authorizes according to the configured PayPal intent/capture setting.
+- The webhook adapter maps `PAYMENT.CAPTURE.COMPLETED` to `captured`, `PAYMENT.CAPTURE.PENDING` and `PAYMENT.AUTHORIZATION.CREATED` to `authorized`, and capture denied/declined events to `failed`.
+- Core `PaymentSession#settle_payment!` persists a captured payment as captured/completed; an authorization-only result remains pending and is not equivalent to captured funds.
+- The webhook handler is idempotent, serializes settlement under the order lock, and completes the order when the gateway reports a captured or authorized session. An authorized order can therefore be placed while the money is not yet captured.
+
+**Implementation consequence:** the creator hold/release clock must not by itself make an earning payable. The release eligibility predicate must additionally require the relevant buyer payment to be captured/settled (not merely an authorization or a placed order). For this product, configure PayPal to capture at checkout unless there is an explicit business requirement to authorize first; regardless, the backend must enforce the captured-payment gate. Capture-pending, authorization-only, failed and unresolved states remain ineligible.
+
+### 10. The default seller onboarding checklist contains physical-commerce requirements
+
+The core default checklist includes:
+
+- Accept marketplace terms.
+- Complete seller profile.
+- Billing address.
+- Returns address.
+- Delivery method.
+- Package type.
+- Minimum product count.
+
+The delivery-method requirement explicitly means the seller has a way to ship; package type asks for parcel dimensions and weight. These requirements are inappropriate for a digital-only creator marketplace. The billing address remains relevant to commission invoicing and seller legal identity. The returns address is not a parcel-return requirement for digital content and must not be used as a substitute for a digital refund policy.
+
+Core also supplies reusable requirement kinds:
+
+- `Document`: seller uploads a PDF/image/document; an operator must accept it.
+- `OperatorReview`: a seller submits information for manual review.
+- `Attestation`: seller records an explicit statement/confirmation.
+- `CompleteProfile`, `BillingAddress`, `AcceptTerms` and `MinimumProducts`.
+
+The document submission workflow records an append-only review submission with reviewer, timestamp and review note. It explicitly documents that core ships no virus scanner; a host app must attach one through the `after_create` hook or a background job.
+
+**Implementation consequence:** replace the physical shipping checklist with a digital-creator checklist. Keep terms, profile, billing/legal details and the minimum approved-content requirement as appropriate. Disable/remove returns-address, delivery-method and package-type requirements. Add separately configured requirements for identity/age verification, rights ownership/licensing, consent/release evidence and human review. The generic requirement kinds are useful workflow primitives, but they do not themselves establish that an identity or age document is authentic; the actual verification process and evidence policy remain to be implemented. Appeal tracking must also be made explicit rather than assumed from the existing resubmission history.
+
+### 11. Existing product review is not the same as the required media approval state
+
+The existing `Products::Propose` / `Products::Approve` workflows manage the product's `proposed` → `active` listing state. The product may be auto-approved when the store preference enables it. The digital-asset workflow offers validation hooks, and the asset-change review can reopen product review, but neither constitutes a per-file moderation verdict or a media quarantine system.
+
+**Implementation consequence:** for this marketplace, seller product auto-approval must be disabled. A separate media moderation state must gate each original and derivative. A product may be published only when its creator is approved, its listing review is approved, and every required media asset has an approved moderation decision. No single product status or generic document submission may stand in for that three-part gate.
+
+### Updated Wave 0 gate
+
+Wave 0 is still **partially complete**. The creator event and payment state foundations have now been inspected. Remaining before implementation:
+
+1. Inspect all public product/seller listing queries, channel publication, search indexing and media preview serializers for visibility leaks.
+2. Inspect the existing storefront and seller/admin dashboard routes to define the digital-only screen and route changes without introducing parallel duplicate flows.
+3. Confirm the exact configured PayPal capture intent and webhook deployment requirements for the target store.
+4. Finalize the hold-period schema and predicate, including partial refunds, completed chargebacks/disputes, late refund completion and reversal after payout.
+5. Finalize the migration, test matrix and smallest coherent implementation sequence.
+
+No production feature code has been changed in this audit step.
