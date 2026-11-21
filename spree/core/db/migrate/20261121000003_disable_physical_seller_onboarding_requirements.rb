@@ -1,31 +1,14 @@
 # frozen_string_literal: true
 
+# Physical onboarding requirements are store configuration, not a global
+# Spree behaviour. The digital marketplace operator disables these rows only
+# in the marketplace store through its store-scoped seller checklist.
 class DisablePhysicalSellerOnboardingRequirements < ActiveRecord::Migration[8.1]
-  PHYSICAL_REQUIREMENTS = %w[
-    Spree::SellerRequirements::ReturnsAddress
-    Spree::SellerRequirements::DeliveryMethod
-    Spree::SellerRequirements::PackageType
-  ].freeze
-
   def up
-    return unless table_exists?(:spree_seller_requirements)
-
-    execute <<~SQL
-      UPDATE spree_seller_requirements
-      SET active = #{quoted_false}
-      WHERE type IN (#{PHYSICAL_REQUIREMENTS.map { |type| connection.quote(type) }.join(', ')})
-    SQL
-
+    # Intentionally no global update: other Spree stores may sell physical goods.
   end
 
   def down
-    # Do not reactivate physical requirements automatically: a marketplace
-    # may have intentionally changed its checklist after this migration.
-  end
-
-  private
-
-  def quoted_false
-    connection.adapter_name.downcase.include?('postgres') ? 'FALSE' : '0'
+    # No data changed by this migration.
   end
 end
