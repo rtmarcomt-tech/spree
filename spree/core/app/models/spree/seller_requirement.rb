@@ -54,21 +54,18 @@ module Spree
     scope :active, -> { where(active: true) }
     scope :required, -> { where(required: true) }
 
-    # The kinds a marketplace starts with, in the order a seller meets them:
-    # agree to the terms, say who you are, tell us where to invoice and where
-    # returns go, have a way to ship, then list something.
+    # The digital marketplace's baseline onboarding checklist: accept the
+    # marketplace terms, complete the creator profile, provide billing details,
+    # and submit an initial listing. Shipping, returns-address and packaging
+    # requirements do not apply to digital-only sales.
     #
-    # Only the kinds that ask a question core already knows how to answer.
-    # The generic ones (an attestation, a document, a manual check) are absent
-    # on purpose — they mean nothing until the operator has written what they
-    # are asking for.
+    # Identity/age evidence, rights ownership and consent are configured as
+    # named Document, Attestation or OperatorReview requirements by the
+    # marketplace operator, so the exact legal evidence and wording are explicit.
     DEFAULT_KINDS = %w[
       Spree::SellerRequirements::AcceptTerms
       Spree::SellerRequirements::CompleteProfile
       Spree::SellerRequirements::BillingAddress
-      Spree::SellerRequirements::ReturnsAddress
-      Spree::SellerRequirements::DeliveryMethod
-      Spree::SellerRequirements::PackageType
       Spree::SellerRequirements::MinimumProducts
     ].freeze
 
