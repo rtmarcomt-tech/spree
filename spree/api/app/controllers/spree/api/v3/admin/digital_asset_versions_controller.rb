@@ -4,7 +4,7 @@ module Spree
       module Admin
         # Operator review of uploaded creator deliverables. Every decision is
         # made against one store-scoped, immutable upload revision.
-        class DigitalAssetVersionsController < BaseController
+        class DigitalAssetVersionsController < ResourceController
           before_action :set_resource, only: [:show, :approve, :reject]
 
           request_params 'DigitalAssetVersionDecisionParams', action: :approve do |body|
@@ -25,7 +25,7 @@ module Spree
             status = params[:status].presence || 'pending'
             unless Spree::DigitalAssetVersion::STATUSES.include?(status)
               return render_error(
-                code: ERROR_CODES[:invalid_resource],
+                code: ERROR_CODES[:validation_error],
                 message: 'Unsupported digital asset version status',
                 status: :unprocessable_entity
               )
