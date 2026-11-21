@@ -308,6 +308,46 @@ module Spree
         available(nil, currency)
       end
 
+      # Products safe to expose in the digital creator marketplace. This is
+      # deliberately a relation-level predicate so IDs, slugs, pagination and
+      # search-provider results all share the same seller/media eligibility.
+      # A product must have at least one digital asset; every attached asset
+      # must have a current, explicitly approved revision.
+      def self.digital_marketplace_visible
+        approved_sellers = Spree::Seller.sellable.select(:id)
+        latest_approved_versions = Spree::DigitalAssetVersion.
+          where(status: 'approved').
+          where(<<~SQL.squish).
+            spree_digital_asset_versions.version_number = (
+              SELECT MAX(latest_versions.version_number)
+              FROM spree_digital_asset_versions latest_versions
+              WHERE latest_versions.digital_asset_id = spree_digital_asset_versions.digital_asset_id
+            )
+          SQL
+          where(id: Spree::DigitalAssetModeration.where(decision: 'approved').
+            select(:digital_asset_version_id)).
+          select(:digital_asset_id)
+
+        approved_asset_ids = Spree::DigitalAsset.where(id: latest_approved_versions).select(:id)
+
+        joins(:digital_assets).
+          where(<<~SQL.squish, approved_sellers, approved_sellers).
+            (#{table_name}.seller_id IS NULL OR #{table_name}.seller_id IN (?))
+            AND NOT EXISTS (
+              SELECT 1 FROM #{Spree::Variant.table_name} seller_variants
+              WHERE seller_variants.product_id = #{table_name}.id
+                AND seller_variants.deleted_at IS NULL
+                AND seller_variants.seller_id IS NOT NULL
+                AND seller_variants.seller_id NOT IN (?)
+            )
+          SQL
+          where(Spree::DigitalAsset.table_name => { id: approved_asset_ids }).
+          where.not(id: joins(:digital_assets).
+            where.not(Spree::DigitalAsset.table_name => { id: approved_asset_ids }).
+            select(:id)).
+          distinct
+      end
+
       # Orders products by best-selling metrics (+units_sold_count+, +revenue+)
       # tracked directly on +spree_products+. Uses Arel::Nodes::As so that
       # ORDER BY expressions appear in SELECT and work with DISTINCT (same
