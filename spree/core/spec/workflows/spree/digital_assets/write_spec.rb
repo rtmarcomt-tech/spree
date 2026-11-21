@@ -28,6 +28,10 @@ RSpec.describe 'Spree::DigitalAssets write workflows' do
       expect(result.value.variant).to eq(product.default_variant)
       expect(result.value.filename).to eq('manual.pdf')
       expect(result.value.authorized_clicks).to eq(3)
+      version = result.value.versions.sole
+      expect(version).to have_attributes(version_number: 1, status: 'pending', content_type: 'image/jpeg')
+      expect(version.attachment.blob).to eq(result.value.attachment.blob)
+      expect(result.value.moderations.sole).to have_attributes(decision: 'pending', digital_asset_version: version)
     end
 
     it "resolves the variant through the product's own variants" do
@@ -100,6 +104,9 @@ RSpec.describe 'Spree::DigitalAssets write workflows' do
       expect(result).to be_success
       expect(seen).to eq([%w[authorized_days], 'manual.pdf'])
       expect(digital_asset.reload.filename).to eq('manual.pdf')
+      expect(digital_asset.versions.order(:version_number).pluck(:version_number, :status)).to eq([[1, 'pending'], [2, 'pending']])
+      expect(digital_asset.versions.order(:version_number).first.attachment.blob.filename.to_s).to eq('thinking-cat.jpg')
+      expect(digital_asset.versions.order(:version_number).last.attachment.blob).to eq(digital_asset.attachment.blob)
     end
 
     it 'leaves the file alone when the payload carries none' do
