@@ -125,7 +125,7 @@ module Spree
       version = versions.latest_first.first
       return false unless version && version.attachment.attached?
       return false unless version.attachment.blob_id == attachment.blob_id
-      return false unless version.approved?
+      return false unless version.status == 'approved'
 
       moderations.where(digital_asset_version: version, decision: 'approved').exists?
     end
