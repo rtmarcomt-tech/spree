@@ -54,7 +54,7 @@ RSpec.describe 'Spree::Sellers workflows' do
     it 'lets an applicant under review trade' do
       seller.update!(status: 'ready_for_review')
 
-      expect(described_class.call(seller: seller)).to be_success
+      expect(described_class.call(seller: seller, override_requirements: true)).to be_success
       expect(seller.reload).to be_approved
     end
 
@@ -137,7 +137,7 @@ RSpec.describe 'Spree::Sellers workflows' do
       seller.update!(status: 'ready_for_review')
       described_class.call(seller: seller)
 
-      expect(Spree::Sellers::Approve.call(seller: seller.reload)).to be_success
+      expect(Spree::Sellers::Approve.call(seller: seller.reload, override_requirements: true)).to be_success
       expect(seller.reload).to be_approved
     end
   end
@@ -151,7 +151,7 @@ RSpec.describe 'Spree::Sellers workflows' do
 
       Spree::Sellers::Invite.call(seller: seller, email: 'seller@example.com', inviter: staff)
       seller.update!(status: 'ready_for_review')
-      Spree::Sellers::Approve.call(seller: seller)
+      Spree::Sellers::Approve.call(seller: seller, override_requirements: true)
       Spree::Sellers::Suspend.call(seller: seller.reload)
       Spree::Sellers::Reject.call(seller: create(:seller, store: store))
 
