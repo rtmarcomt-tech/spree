@@ -3348,74 +3348,42 @@ export class AdminClient {
   }
 
   // ============================================
-  // Creator media moderation
-  // ============================================
-
-  /**
-   * Store-scoped moderation queue. Preview URLs are authenticated admin
-   * endpoints; they never expose an Active Storage service URL.
-   */
+  // Creator media enforcement: content is published immediately; admins can remove violations.
   readonly digitalAssetVersions = {
     list: (
-      params?: { status?: 'pending' | 'approved' | 'rejected' },
+      params?: { status?: 'published' | 'removed' },
       options?: RequestOptions,
-    ): Promise<{
-      data: Array<{
-        id: string
-        digital_asset_id: string
-        product_id: string
-        product_title: string
-        seller_id: string | null
-        seller_name: string | null
-        file_name: string
-        preview_url: string
-        version_number: number
-        status: 'pending' | 'approved' | 'rejected'
-        content_type: string
-        byte_size: number
-        submitted_at: string
-        moderation_history: Array<{
-          decision: string
-          reason_code: string | null
-          notes: string | null
-          decided_at: string | null
-          reviewer_id: string | null
-        }>
+    ): Promise<{ data: Array<{
+      id: string
+      digital_asset_id: string
+      product_id: string
+      product_title: string
+      seller_id: string | null
+      seller_name: string | null
+      file_name: string
+      preview_url: string
+      version_number: number
+      status: 'published' | 'removed'
+      content_type: string
+      byte_size: number
+      submitted_at: string
+      moderation_history: Array<{
+        decision: string
+        reason_code: string | null
+        notes: string | null
+        decided_at: string | null
+        reviewer_id: string | null
       }>
-    }> => this.request('GET', '/digital_asset_versions', { ...options, params }),
+    }> }> => this.request('GET', '/digital_asset_versions', { ...options, params }),
 
-    approve: (
-      id: string,
-      params?: { reason_code?: string; notes?: string },
-      options?: RequestOptions,
-    ): Promise<{
-      data: {
-        id: string
-        digital_asset_id: string
-        version_number: number
-        status: string
-        submitted_at: string
-      }
-    }> =>
-      this.request('PATCH', `/digital_asset_versions/${id}/approve`, { ...options, body: params }),
-
-    reject: (
+    remove: (
       id: string,
       params: { reason_code: string; notes?: string },
       options?: RequestOptions,
-    ): Promise<{
-      data: {
-        id: string
-        digital_asset_id: string
-        version_number: number
-        status: string
-        submitted_at: string
-      }
-    }> =>
-      this.request('PATCH', `/digital_asset_versions/${id}/reject`, { ...options, body: params }),
+    ): Promise<{ data: { id: string; digital_asset_id: string; version_number: number; status: string; submitted_at: string } }> =>
+      this.request('PATCH', `/digital_asset_versions/${id}/remove`, { ...options, body: params }),
   }
 
-  // ============================================
   // Marketplace sellers
   // ============================================
 
