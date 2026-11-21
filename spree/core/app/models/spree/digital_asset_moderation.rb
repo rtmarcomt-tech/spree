@@ -10,7 +10,7 @@ module Spree
     include Spree::Metadata
     include Spree::SingleStoreResource
 
-    DECISIONS = %w[pending approved rejected].freeze
+    DECISIONS = %w[removed].freeze
 
     belongs_to :digital_asset, class_name: 'Spree::DigitalAsset', inverse_of: :moderations
     belongs_to :digital_asset_version, class_name: 'Spree::DigitalAssetVersion',
