@@ -12,20 +12,14 @@ RSpec.describe Spree::DigitalAssetModeration, type: :model do
       checksum: blob.checksum,
       content_type: blob.content_type,
       byte_size: blob.byte_size,
-      status: 'pending',
+      status: 'published',
       submitted_at: Time.current
     ).tap { |item| item.attachment.attach(blob); item.save! }
   end
 
-  it 'requires the moderation decision to refer to the same asset version' do
-    moderation = described_class.new(
-      store: store,
-      digital_asset: digital_asset,
-      digital_asset_version: version,
-      decision: 'pending'
-    )
-
-    expect(moderation).to be_valid
+  it 'allows creator uploads to be immediately available without an admin decision' do
+    expect(version).to be_available_for_sale
+    expect(digital_asset.reload).to be_approved_for_delivery
   end
 
   it 'does not permit replacing the bytes attached to an existing revision' do
@@ -39,48 +33,19 @@ RSpec.describe Spree::DigitalAssetModeration, type: :model do
     expect { version.attachment.attach(replacement) }.to raise_error(ActiveRecord::ReadOnlyRecord)
   end
 
-  it 'keeps delivery blocked until the current file version has an approval decision' do
+  it 'records an administrator removal as an immutable audit entry' do
     moderation = described_class.create!(
       store: store,
       digital_asset: digital_asset,
       digital_asset_version: version,
-      decision: 'pending'
-    )
-
-    expect(digital_asset).not_to be_approved_for_delivery
-
-    version.update!(status: 'approved')
-    described_class.create!(
-      store: store,
-      digital_asset: digital_asset,
-      digital_asset_version: version,
-      decision: 'approved',
+      decision: 'removed',
       reviewed_by_admin_user: create(:admin_user),
+      reason_code: 'policy_violation',
       decided_at: Time.current
     )
 
-    expect(digital_asset.reload).to be_approved_for_delivery
-  end
-
-  it 'does not permit rewriting a recorded decision' do
-    moderation = described_class.create!(
-      store: store,
-      digital_asset: digital_asset,
-      digital_asset_version: version,
-      decision: 'pending'
-    )
-
-    expect { moderation.update!(decision: 'approved') }.to raise_error(ActiveRecord::ReadOnlyRecord)
-  end
-
-  it 'does not permit deleting a recorded decision' do
-    moderation = described_class.create!(
-      store: store,
-      digital_asset: digital_asset,
-      digital_asset_version: version,
-      decision: 'pending'
-    )
-
+    expect(moderation).to be_persisted
+    expect { moderation.update!(notes: 'rewritten') }.to raise_error(ActiveRecord::ReadOnlyRecord)
     expect { moderation.destroy! }.to raise_error(ActiveRecord::ReadOnlyRecord)
   end
 end
