@@ -119,7 +119,7 @@ module Spree
     def approved_for_delivery?
       return false unless attachment.attached?
 
-      version = versions.latest_first.first
+      version = versions.max_by(&:version_number)
       return true unless version
 
       version.available_for_sale? && version.attachment.attached? && version.attachment.blob_id == attachment.blob_id
