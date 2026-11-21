@@ -314,7 +314,7 @@ module Spree
       # A product must have at least one digital asset; every attached asset
       # must have a current, explicitly approved revision.
       def self.digital_marketplace_visible
-        approved_sellers = Spree::Seller.sellable.select(:id)
+        approved_sellers = Spree::Seller.sellable.where(store_id: Spree::Current.store&.id).select(:id)
         latest_approved_versions = Spree::DigitalAssetVersion.
           where(status: 'approved').
           where(<<~SQL.squish).
