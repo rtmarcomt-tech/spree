@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
 module Spree
-  # Immutable uploaded revision. Delivery continues to use DigitalAsset's
-  # current attachment, while this record retains the exact blob originally
-  # submitted and the moderation state for that revision.
+  # Immutable uploaded revision. Digital links pin this record so later uploads
+  # cannot change the bytes an existing buyer is entitled to receive.
   class DigitalAssetVersion < Spree.base_class
     has_prefix_id :dav
 
@@ -31,6 +30,11 @@ module Spree
 
     scope :pending_review, -> { where(status: 'pending') }
     scope :latest_first, -> { order(version_number: :desc) }
+
+    # Approval belongs to this immutable upload, not to the asset's latest file.
+    def approved?
+      status == 'approved' && moderations.where(decision: 'approved').exists?
+    end
 
     private
 
