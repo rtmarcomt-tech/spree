@@ -11,8 +11,8 @@ import {
   Label,
   Textarea,
 } from '@spree/dashboard-ui'
-import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/_authenticated/$storeId/sellers/media-review')({
@@ -41,9 +41,10 @@ function AuthenticatedMediaPreview({ item }: { item: PreviewItem }) {
         setObjectUrl(null)
 
         const apiBaseUrl = import.meta.env.VITE_SPREE_API_URL || ''
-        const url = item.preview_url.startsWith('http://') || item.preview_url.startsWith('https://')
-          ? item.preview_url
-          : `${apiBaseUrl}${item.preview_url}`
+        const url =
+          item.preview_url.startsWith('http://') || item.preview_url.startsWith('https://')
+            ? item.preview_url
+            : `${apiBaseUrl}${item.preview_url}`
         const apiOrigin = apiBaseUrl
           ? new URL(apiBaseUrl).origin
           : window.location.origin
@@ -87,6 +88,8 @@ function AuthenticatedMediaPreview({ item }: { item: PreviewItem }) {
     return <img src={objectUrl} alt={item.file_name} className="max-h-[480px] max-w-full rounded-md object-contain" />
   }
   if (item.content_type.startsWith('video/')) {
+    // Uploaded source videos may not include caption files; reviewers must inspect the original media.
+    // biome-ignore lint/a11y/useMediaCaption: source uploads are reviewed as submitted and have no generated caption track.
     return <video src={objectUrl} controls playsInline className="max-h-[480px] max-w-full rounded-md" />
   }
   if (item.content_type === 'application/pdf') {
@@ -189,7 +192,15 @@ function CreatorMediaReviewPage() {
                   <Button disabled={decision.isPending || selectedId !== null} onClick={() => decision.mutate({ id: item.id, approve: true })}>
                     Approve revision
                   </Button>
-                  <Button variant="destructive" disabled={decision.isPending || selectedId !== null} onClick={() => { setSelectedId(item.id); setReasonCode('policy_violation'); setNotes('') }}>
+                  <Button
+                    variant="destructive"
+                    disabled={decision.isPending || selectedId !== null}
+                    onClick={() => {
+                      setSelectedId(item.id)
+                      setReasonCode('policy_violation')
+                      setNotes('')
+                    }}
+                  >
                     Reject revision
                   </Button>
                 </div>
