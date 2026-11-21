@@ -330,15 +330,17 @@ module Spree
 
         approved_asset_ids = Spree::DigitalAsset.where(id: latest_approved_versions).select(:id)
 
+        seller_ids_sql = approved_sellers.to_sql
+
         joins(:digital_assets).
-          where(<<~SQL.squish, approved_sellers, approved_sellers).
-            (#{table_name}.seller_id IS NULL OR #{table_name}.seller_id IN (?))
+          where(<<~SQL.squish).
+            (#{table_name}.seller_id IS NULL OR #{table_name}.seller_id IN (#{seller_ids_sql}))
             AND NOT EXISTS (
               SELECT 1 FROM #{Spree::Variant.table_name} seller_variants
               WHERE seller_variants.product_id = #{table_name}.id
                 AND seller_variants.deleted_at IS NULL
                 AND seller_variants.seller_id IS NOT NULL
-                AND seller_variants.seller_id NOT IN (?)
+                AND seller_variants.seller_id NOT IN (#{seller_ids_sql})
             )
           SQL
           where(Spree::DigitalAsset.table_name => { id: approved_asset_ids }).
