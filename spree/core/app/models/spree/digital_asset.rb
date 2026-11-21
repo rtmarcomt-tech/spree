@@ -115,23 +115,18 @@ module Spree
       provider_class.new(self).deliver(digital_link, expires_in: expires_in)
     end
 
-    # @return [Boolean] whether there is anything to hand to a customer
-    # Delivery is fail-closed: the current attachment must have a preserved
-    # version and an explicit approval decision for that exact version.
-    # Legacy assets without version history remain unavailable until reviewed.
+    # Uploaded files are immediately deliverable unless an administrator has removed them.
     def approved_for_delivery?
       return false unless attachment.attached?
 
       version = versions.latest_first.first
-      return false unless version && version.attachment.attached?
-      return false unless version.attachment.blob_id == attachment.blob_id
-      return false unless version.status == 'approved'
+      return true unless version
 
-      moderations.where(digital_asset_version: version, decision: 'approved').exists?
+      version.available_for_sale? && version.attachment.attached? && version.attachment.blob_id == attachment.blob_id
     end
 
     def downloadable?
-      attachment.attached? && approved_for_delivery?
+      approved_for_delivery?
     end
 
     # @param expires_in [ActiveSupport::Duration] lifetime of the signed URL
