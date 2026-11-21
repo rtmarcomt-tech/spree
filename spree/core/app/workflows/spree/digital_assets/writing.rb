@@ -88,7 +88,7 @@ module Spree
       def record_uploaded_version
         digital_asset.with_lock do
           number = digital_asset.versions.maximum(:version_number).to_i + 1
-          version = digital_asset.versions.create!(
+          version = digital_asset.versions.build(
             store: store,
             version_number: number,
             checksum: blob.checksum,
@@ -98,6 +98,7 @@ module Spree
             submitted_at: Time.current
           )
           version.attachment.attach(blob)
+          version.save!
           digital_asset.moderations.create!(
             store: store,
             digital_asset_version: version,
