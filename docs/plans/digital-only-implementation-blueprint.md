@@ -391,3 +391,12 @@ Validation limitation: specs have been added but have not been run in a local ch
 - Stale revisions cannot be approved after a replacement upload. Repeated decisions are refused because the version must still be pending.
 - Added workflow specs for approval, rejection, missing reviewer and stale-version rejection.
 - The workflow is the domain operation only; an authenticated admin API endpoint and dashboard moderation queue still need to be connected.
+
+
+### Storefront and cart eligibility enforcement added
+
+- Added `Product.digital_marketplace_visible` as a relation-level eligibility predicate. It requires a sellable (approved and not on holiday) seller wherever seller ownership is assigned, at least one digital asset, and an explicitly approved moderation decision for the latest version of every asset.
+- The catalog predicate also checks that the approved version's private Active Storage blob is still the exact blob attached as the asset's current delivery file. A stale approval cannot keep a replaced file visible.
+- Applied the predicate after buyer catalog/context resolution in the v3 storefront product scope. Product index, direct ID/slug lookup, search-provider product results and the filters endpoint therefore inherit the same eligible relation.
+- Applied the same predicate to `SalesContext#orderable_variants`, which is the common variant eligibility path used by carts and checkout. An ineligible creator listing cannot be added to a cart through the normal sales-context path.
+- Remaining validation work: add focused database/request specs for mixed seller ownership, pending/rejected/latest-version media, replacement blobs, search and facets; inspect every alternate admin/draft-order path; and execute the prescribed test suite. These changes have not yet been run locally.
