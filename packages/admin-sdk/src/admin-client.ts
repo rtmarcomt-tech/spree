@@ -2661,7 +2661,8 @@ export class AdminClient {
     /** Registered delivery calculator classes, each with the JSON Schema of its preferences. */
     calculators: (
       options?: RequestOptions,
-    ): Promise<{ data: Array<{ type: string; name: string; schema: PreferenceSchema }> }> =>
+    ): Promise<{
+      data: Array<{ type: string; name: string; schema: PreferenceSchema }> }> =>
       this.request<{ data: Array<{ type: string; name: string; schema: PreferenceSchema }> }>(
         'GET',
         '/delivery_methods/calculators',
@@ -3374,13 +3375,22 @@ export class AdminClient {
         decided_at: string | null
         reviewer_id: string | null
       }>
-    }> }> => this.request('GET', '/digital_asset_versions', { ...options, params }),
+      }>
+    }> => this.request('GET', '/digital_asset_versions', { ...options, params }),
 
     remove: (
       id: string,
       params: { reason_code: string; notes?: string },
       options?: RequestOptions,
-    ): Promise<{ data: { id: string; digital_asset_id: string; version_number: number; status: string; submitted_at: string } }> =>
+    ): Promise<{
+      data: {
+        id: string
+        digital_asset_id: string
+        version_number: number
+        status: string
+        submitted_at: string
+      }
+    }> =>
       this.request('PATCH', `/digital_asset_versions/${id}/remove`, { ...options, body: params }),
   }
 
