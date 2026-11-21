@@ -43,7 +43,6 @@ function AuthenticatedMediaPreview({ item }: { item: PreviewItem }) {
         const apiBaseUrl = import.meta.env.VITE_SPREE_API_URL || ''
         const url = item.preview_url.startsWith('http://') || item.preview_url.startsWith('https://')
           ? item.preview_url
-          ? item.preview_url
           : `${apiBaseUrl}${item.preview_url}`
         const apiOrigin = apiBaseUrl
           ? new URL(apiBaseUrl).origin
