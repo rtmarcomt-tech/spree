@@ -1,0 +1,41 @@
+name: Marketplace architecture checks
+
+on:
+  pull_request:
+    paths:
+      - "docs/marketplace-digital/**"
+      - ".github/workflows/marketplace-architecture-ci.yml"
+  push:
+    branches:
+      - "marketplace-digital/architecture"
+    paths:
+      - "docs/marketplace-digital/**"
+      - ".github/workflows/marketplace-architecture-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  architecture-docs:
+    name: Validate architecture documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure architecture document exists
+        run: test -s docs/marketplace-digital/ARCHITECTURE.md
+      - name: Ensure core decisions are documented
+        run: |
+          set -euo pipefail
+          for term in "PayPal" "10%" "creator_ledger_entries" "media_access_grants" "creator_verification_cases" "fund_holds" "payout_batches"; do
+            grep -Fq "$term" docs/marketplace-digital/ARCHITECTURE.md || {
+              echo "Missing required architecture term: $term"
+              exit 1
+            }
+          done
+      - name: Reject Stripe as a configured marketplace payment provider
+        run: |
+          set -euo pipefail
+          if grep -Eiq '^[[:space:]]*payment_provider:[[:space:]]*stripe' docs/marketplace-digital/ARCHITECTURE.md; then
+            echo "Stripe must not be configured for this marketplace."
+            exit 1
+          fi
