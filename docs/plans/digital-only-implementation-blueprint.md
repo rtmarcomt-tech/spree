@@ -359,3 +359,18 @@ Implemented on `feat/digital-only-marketplace`:
 - Added model/workflow specs and factories for release times and financial holds.
 
 Validation limitation: these changes were committed through the GitHub repository API. The repository test suite has not been executed in a local checkout, so the added specs are not yet reported as passing. Before deployment, run the core model and workflow specs through the repository's prescribed `scripts/test/` runner.
+
+
+## Implementation progress — digital media versioning and moderation history
+
+Added to the feature branch:
+
+- `Spree::DigitalAssetVersion`: one immutable revision record per upload, with store, version number, private Active Storage attachment, checksum, MIME type, byte size, submission timestamp and pending/approved/rejected status.
+- `Spree::DigitalAssetModeration`: a moderation trail tied to the exact asset revision, with reviewer, decision, reason code, notes, timestamp and metadata. Decisions are append-only; corrections or later approval must be new records rather than rewriting history.
+- Digital asset create/update workflows now preserve each uploaded blob as a separately attached private version before a later replacement can overwrite the current delivery attachment.
+- Each new upload creates a pending moderation record and pending version. Replacing a file therefore does not erase the earlier blob or transfer its moderation decision to the replacement.
+- Added workflow/model specs covering first upload, replacement, historical blob preservation, pending moderation and append-only decisions.
+
+Important remaining integration work: the storefront delivery and download authorization paths have not yet been changed to require an approved moderation decision for the exact current version. Until that gate is implemented and tested end-to-end, this work is a persistence/audit foundation, not a completed moderation enforcement system. Existing download delivery behaviour remains unchanged at this checkpoint.
+
+Validation limitation: specs have been added but have not been run in a local checkout. Use the repository's prescribed `scripts/test/` runner before deployment.
