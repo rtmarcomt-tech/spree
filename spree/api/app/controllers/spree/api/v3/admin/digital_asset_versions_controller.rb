@@ -5,14 +5,9 @@ module Spree
         # Operator review of uploaded creator deliverables. Every decision is
         # made against one store-scoped, immutable upload revision.
         class DigitalAssetVersionsController < ResourceController
-          before_action :set_resource, only: [:show, :preview, :approve, :reject]
+          before_action :set_resource, only: [:show, :preview, :remove]
 
-          request_params 'DigitalAssetVersionDecisionParams', action: :approve do |body|
-            body.attribute :reason_code, :string
-            body.attribute :notes, :string
-          end
-
-          request_params 'DigitalAssetVersionDecisionParams', action: :reject do |body|
+          request_params 'DigitalAssetRemovalParams', action: :remove do |body|
             body.attribute :reason_code, :string, required: true
             body.attribute :notes, :string
           end
@@ -22,7 +17,7 @@ module Spree
           def index
             authorize! :read, Spree::Product
 
-            status = params[:status].presence || 'pending'
+            status = params[:status].presence || 'published'
             unless Spree::DigitalAssetVersion::STATUSES.include?(status)
               return render_error(
                 code: ERROR_CODES[:validation_error],
@@ -86,35 +81,32 @@ module Spree
                       filename: @resource.attachment.filename.to_s
           end
 
-          def approve
+          def remove
             authorize! :update, @resource.digital_asset.product
-            decide('approved')
-          end
+            return render_error(code: ERROR_CODES[:validation_error], message: 'A removal reason is required', status: :unprocessable_entity) if params[:reason_code].blank?
 
-          def reject
-            authorize! :update, @resource.digital_asset.product
-            decide('rejected')
+            Spree::DigitalAssetModeration.transaction do
+              @resource.with_lock do
+                @resource.update!(status: 'removed')
+                @resource.digital_asset.moderations.create!(
+                  store: current_store,
+                  digital_asset_version: @resource,
+                  decision: 'removed',
+                  reviewed_by_admin_user: try_spree_current_user,
+                  reason_code: params[:reason_code],
+                  notes: params[:notes],
+                  decided_at: Time.current
+                )
+              end
+            end
+            @resource.reload
+            render_version
           end
 
           private
 
           def set_resource
             @resource = Spree::DigitalAssetVersion.where(store_id: current_store.id).find_by_param!(params[:id])
-          end
-
-          def decide(decision)
-            result = Spree::DigitalAssets::Moderate.call(
-              digital_asset_version: @resource,
-              decision: decision,
-              reviewer: try_spree_current_user,
-              reason_code: params[:reason_code],
-              notes: params[:notes]
-            )
-
-            return render_service_error(result.error) unless result.success?
-
-            @resource.reload
-            render_version
           end
 
           def render_version
