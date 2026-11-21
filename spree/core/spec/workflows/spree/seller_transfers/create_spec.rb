@@ -124,7 +124,8 @@ RSpec.describe Spree::SellerTransfers::Create do
     it 'uses the configured hold period from fulfillment' do
       store.update!(preferred_creator_earnings_hold_days: 3)
       order = shipped_order
-      fulfilled_at = order.fulfilled_at
+      fulfillment = order.fulfillments.where(status: %w[fulfilled delivered]).sole
+      fulfilled_at = fulfillment.fulfilled_at
 
       transfer = described_class.call(order: order).value
 
