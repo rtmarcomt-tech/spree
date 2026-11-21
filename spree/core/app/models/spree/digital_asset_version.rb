@@ -28,7 +28,6 @@ module Spree
     validates :attachment, attached: true
     validate :asset_belongs_to_same_store
 
-    scope :pending_review, -> { where(status: 'pending') }
     scope :latest_first, -> { order(version_number: :desc) }
 
     # Approval belongs to this immutable upload, not to the asset's latest file.
