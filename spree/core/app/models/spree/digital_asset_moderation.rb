@@ -22,7 +22,7 @@ module Spree
 
     validates :decision, inclusion: { in: DECISIONS }
     validates :decided_at, presence: true, if: -> { decision == 'removed' }
-    validates :reviewed_by_admin_user, presence: true, if: -> { decision.in?(%w[approved rejected]) }
+    validates :reviewed_by_admin_user, presence: true, if: -> { decision == 'removed' }
     validate :version_belongs_to_same_asset_and_store
 
     scope :latest_first, -> { order(created_at: :desc, id: :desc) }
