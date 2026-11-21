@@ -87,7 +87,7 @@ module Spree
       # buyer entitlement or a moderator's decision refers to.
       def record_uploaded_version
         digital_asset.with_lock do
-          number = digital_asset.versions.maximum(:version_number).to_i + 1
+          number = Spree::DigitalAssetVersion.where(digital_asset_id: digital_asset.id).maximum(:version_number).to_i + 1
           version = digital_asset.versions.build(
             store: store,
             version_number: number,
