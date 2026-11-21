@@ -94,16 +94,11 @@ module Spree
             checksum: blob.checksum,
             content_type: blob.content_type,
             byte_size: blob.byte_size,
-            status: 'pending',
+            status: 'published',
             submitted_at: Time.current
           )
           version.attachment.attach(blob)
           version.save!
-          digital_asset.moderations.create!(
-            store: store,
-            digital_asset_version: version,
-            decision: 'pending'
-          )
         end
       end
 
