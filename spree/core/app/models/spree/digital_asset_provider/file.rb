@@ -8,11 +8,13 @@ module Spree
         true
       end
 
-      def deliver(_digital_link, expires_in:)
-        return unless digital_asset.attachment.attached?
+      def deliver(digital_link, expires_in:)
+        version = digital_link.digital_asset_version
+        return unless version&.approved? && version.digital_asset_id == digital_asset.id
+        return unless version.attachment.attached?
 
         Spree::DigitalDelivery.new(
-          redirect_url: digital_asset.attachment.url(expires_in: expires_in, disposition: :attachment)
+          redirect_url: version.attachment.url(expires_in: expires_in, disposition: :attachment)
         )
       end
     end
