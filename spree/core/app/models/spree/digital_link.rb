@@ -20,8 +20,7 @@ module Spree
     before_validation :set_defaults, on: :create
     validates :access_counter, numericality: { greater_than_or_equal_to: 0 }
 
-    # Legacy links without a pinned version remain readable as records but are
-    # deliberately not downloadable; new links always pin an approved revision.
+    # Existing purchases retain their pinned revision unless an administrator removes it.
     def filename
       digital_asset_version&.attachment&.filename || digital_asset.filename
     end
@@ -32,9 +31,9 @@ module Spree
 
     def deliverable_version?
       if store.preferred_digital_creator_marketplace_enabled
-        digital_asset_version&.approved? && digital_asset_version.digital_asset_id == digital_asset_id
+        digital_asset_version&.available_for_sale? && digital_asset_version.digital_asset_id == digital_asset_id
       else
-        digital_asset_version.nil? || (digital_asset_version.approved? && digital_asset_version.digital_asset_id == digital_asset_id)
+        digital_asset_version.nil? || (digital_asset_version.available_for_sale? && digital_asset_version.digital_asset_id == digital_asset_id)
       end
     end
     # The order's store is authoritative for both the download-limit flags and,
