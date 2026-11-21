@@ -395,6 +395,15 @@ Spree::Core::Engine.add_routes do
           end
         end
 
+        # Uploaded creator files awaiting operator moderation. Decisions are
+        # scoped to one immutable version and never inherited by replacements.
+        resources :digital_asset_versions, only: [:index, :show] do
+          member do
+            patch :approve
+            patch :reject
+          end
+        end
+
         # Digital download grants — read and reset only; they are created by
         # order completion, never by hand.
         resources :digital_links, only: [:index, :show] do
