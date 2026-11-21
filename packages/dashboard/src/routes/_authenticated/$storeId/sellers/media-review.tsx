@@ -1,4 +1,4 @@
-import { adminClient } from '@spree/dashboard-core'
+import { adminClient, getApiClient, useAuth } from '@spree/dashboard-core'
 import {
   Alert,
   AlertDescription,
@@ -13,11 +13,87 @@ import {
 } from '@spree/dashboard-ui'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/_authenticated/$storeId/sellers/media-review')({
   component: CreatorMediaReviewPage,
 })
+
+type PreviewItem = {
+  preview_url: string
+  file_name: string
+  content_type: string
+}
+
+function AuthenticatedMediaPreview({ item }: { item: PreviewItem }) {
+  const { token } = useAuth()
+  const [objectUrl, setObjectUrl] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    let active = true
+    let createdUrl: string | null = null
+
+    async function loadPreview() {
+      try {
+        setError(null)
+        setObjectUrl(null)
+
+        const apiBaseUrl = import.meta.env.VITE_SPREE_API_URL || ''
+        const url = /^https?:\\/\\//.test(item.preview_url)
+          ? item.preview_url
+          : `${apiBaseUrl}${item.preview_url}`
+        const apiOrigin = apiBaseUrl
+          ? new URL(apiBaseUrl).origin
+          : window.location.origin
+        const sameOrigin = new URL(url, window.location.origin).origin === apiOrigin
+        const headers: Record<string, string> = {}
+
+        if (sameOrigin && token) {
+          headers.Authorization = `Bearer ${token}`
+          Object.assign(headers, getApiClient().downloadHeaders?.() ?? {})
+        }
+
+        const response = await fetch(url, {
+          headers,
+          credentials: sameOrigin ? 'include' : 'omit',
+          signal: controller.signal,
+        })
+        if (!response.ok) throw new Error(`Preview unavailable (${response.status})`)
+
+        const blob = await response.blob()
+        if (!active) return
+        createdUrl = URL.createObjectURL(blob)
+        setObjectUrl(createdUrl)
+      } catch (cause) {
+        if (!active || (cause instanceof DOMException && cause.name === 'AbortError')) return
+        setError(cause instanceof Error ? cause.message : 'Could not load private preview.')
+      }
+    }
+
+    void loadPreview()
+    return () => {
+      active = false
+      controller.abort()
+      if (createdUrl) URL.revokeObjectURL(createdUrl)
+    }
+  }, [item.preview_url, token])
+
+  if (error) return <p className="text-sm text-destructive">{error}</p>
+  if (!objectUrl) return <p className="text-sm text-muted-foreground">Loading secure preview…</p>
+
+  if (item.content_type.startsWith('image/')) {
+    return <img src={objectUrl} alt={item.file_name} className="max-h-[480px] max-w-full rounded-md object-contain" />
+  }
+  if (item.content_type.startsWith('video/')) {
+    return <video src={objectUrl} controls playsInline className="max-h-[480px] max-w-full rounded-md" />
+  }
+  if (item.content_type === 'application/pdf') {
+    return <a className="text-sm underline" href={objectUrl} target="_blank" rel="noreferrer">Open private PDF preview</a>
+  }
+  return <p className="text-sm text-muted-foreground">No inline preview is available for this file type.</p>
+}
 
 function CreatorMediaReviewPage() {
   const queryClient = useQueryClient()
@@ -88,15 +164,7 @@ function CreatorMediaReviewPage() {
                 </p>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                {item.content_type.startsWith('image/') ? (
-                  <img src={item.preview_url} alt={item.file_name} className="max-h-[480px] max-w-full rounded-md object-contain" />
-                ) : item.content_type.startsWith('video/') ? (
-                  <video src={item.preview_url} controls playsInline className="max-h-[480px] max-w-full rounded-md" />
-                ) : item.content_type === 'application/pdf' ? (
-                  <a className="text-sm underline" href={item.preview_url} target="_blank" rel="noreferrer">Open private PDF preview</a>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No inline preview is available for this file type.</p>
-                )}
+                <AuthenticatedMediaPreview item={item} />
 
                 {selectedId === item.id && (
                   <div className="grid gap-2 rounded-md border p-3">
