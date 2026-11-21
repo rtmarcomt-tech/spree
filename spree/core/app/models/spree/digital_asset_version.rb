@@ -46,7 +46,10 @@ module Spree
     # A replacement is a new DigitalAssetVersion and therefore a new review.
     def prevent_replacing_uploaded_attachment!
       return unless attachment_changes.key?('attachment')
-      return unless attachment.attached?
+      # Active Storage persists the first attachment in a separate save after
+      # the version row is created. Permit that initial attach, but refuse any
+      # later reassignment or purge once an attachment row already exists.
+      return unless attachment_attachment.present?
 
       raise ActiveRecord::ReadOnlyRecord, 'Uploaded revision attachment is immutable'
     end
