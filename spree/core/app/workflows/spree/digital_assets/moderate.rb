@@ -13,21 +13,29 @@ module Spree
         reject!(:version_not_pending) unless digital_asset_version.status == 'pending'
         reject!(:version_not_current) unless current_version?
 
+        # Uploads serialize version creation against the asset row. Moderation
+        # must take that same lock before locking the version; otherwise a new
+        # upload can replace the current attachment while an older revision is
+        # being approved.
         ApplicationRecord.transaction do
-          digital_asset_version.with_lock do
-            reject!(:version_not_pending) unless digital_asset_version.status == 'pending'
-            reject!(:version_not_current) unless current_version?
+          asset = digital_asset_version.digital_asset
 
-            digital_asset_version.update!(status: decision.to_s)
-            digital_asset_version.digital_asset.moderations.create!(
-              store: digital_asset_version.store,
-              digital_asset_version: digital_asset_version,
-              decision: decision.to_s,
-              reviewed_by_admin_user: reviewer,
-              reason_code: reason_code,
-              notes: notes,
-              decided_at: Time.current
-            )
+          asset.with_lock do
+            digital_asset_version.with_lock do
+              reject!(:version_not_pending) unless digital_asset_version.status == 'pending'
+              reject!(:version_not_current) unless current_version?
+
+              digital_asset_version.update!(status: decision.to_s)
+              asset.moderations.create!(
+                store: digital_asset_version.store,
+                digital_asset_version: digital_asset_version,
+                decision: decision.to_s,
+                reviewed_by_admin_user: reviewer,
+                reason_code: reason_code,
+                notes: notes,
+                decided_at: Time.current
+              )
+            end
           end
         end
 
