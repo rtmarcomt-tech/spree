@@ -79,6 +79,31 @@ module Spree
 
       def save_digital_asset
         failure(digital_asset) unless digital_asset.save
+        record_uploaded_version if blob
+      end
+
+      # Keep a second private attachment to the exact uploaded blob. Replacing
+      # DigitalAsset#attachment later therefore cannot change what an earlier
+      # buyer entitlement or a moderator's decision refers to.
+      def record_uploaded_version
+        digital_asset.with_lock do
+          number = digital_asset.versions.maximum(:version_number).to_i + 1
+          version = digital_asset.versions.create!(
+            store: store,
+            version_number: number,
+            checksum: blob.checksum,
+            content_type: blob.content_type,
+            byte_size: blob.byte_size,
+            status: 'pending',
+            submitted_at: Time.current
+          )
+          version.attachment.attach(blob)
+          digital_asset.moderations.create!(
+            store: store,
+            digital_asset_version: version,
+            decision: 'pending'
+          )
+        end
       end
 
       # A seller changing what an approved listing delivers reopens its review.
