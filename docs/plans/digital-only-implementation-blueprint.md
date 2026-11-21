@@ -1,6 +1,6 @@
 # Digital-Only Creator Marketplace — Implementation Blueprint
 
-**Status:** Architecture freeze candidate; no application code changed yet  
+**Status:** Implementation in progress — partial; integration validation remains outstanding  
 **Branch:** `feat/digital-only-marketplace`  
 **Parent architecture:** `docs/plans/digital-only-creator-marketplace.md`
 
