@@ -395,13 +395,12 @@ Spree::Core::Engine.add_routes do
           end
         end
 
-        # Uploaded creator files awaiting operator moderation. Decisions are
-        # scoped to one immutable version and never inherited by replacements.
+        # Creator media is published immediately. Admins may remove content
+        # after publication when it breaches marketplace rules.
         resources :digital_asset_versions, only: [:index, :show] do
           member do
             get :preview
-            patch :approve
-            patch :reject
+            patch :remove
           end
         end
 
