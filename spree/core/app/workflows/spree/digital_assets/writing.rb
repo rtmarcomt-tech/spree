@@ -108,7 +108,33 @@ module Spree
       # buyer entitlement or a moderator's decision refers to.
       def record_uploaded_version
         digital_asset.with_lock do
-          number = Spree::DigitalAssetVersion.where(digital_asset_id: digital_asset.id).maximum(:version_number).to_i + 1
+          versions = Spree::DigitalAssetVersion.where(digital_asset_id: digital_asset.id)
+          latest = versions.latest_first.first
+
+          # Assets created before version history was introduced have no
+          # revision row. On their first replacement, preserve the bytes that
+          # were previously delivered before recording the new upload.
+          if @previous_attachment_blob && latest.nil?
+            latest = digital_asset.versions.create!(
+              store: store,
+              version_number: 1,
+              checksum: @previous_attachment_blob.checksum,
+              content_type: @previous_attachment_blob.content_type,
+              byte_size: @previous_attachment_blob.byte_size,
+              status: 'published',
+              submitted_at: Time.current
+            )
+            latest.attachment.attach(@previous_attachment_blob)
+          elsif @previous_attachment_blob && latest && !latest.attachment.attached?
+            latest.update!(
+              checksum: @previous_attachment_blob.checksum,
+              content_type: @previous_attachment_blob.content_type,
+              byte_size: @previous_attachment_blob.byte_size
+            )
+            latest.attachment.attach(@previous_attachment_blob)
+          end
+
+          number = versions.maximum(:version_number).to_i + 1
           version = digital_asset.versions.build(
             store: store,
             version_number: number,
@@ -120,13 +146,6 @@ module Spree
           )
           version.attachment.attach(blob)
           version.save!
-
-          # The old blob remains pinned to its previous revision even after the
-          # asset's current attachment has been replaced.
-          if @previous_attachment_blob && version.version_number > 1
-            previous = digital_asset.versions.where.not(id: version.id).latest_first.first
-            previous.attachment.attach(@previous_attachment_blob) if previous && !previous.attachment.attached?
-          end
         end
       end
 
