@@ -13,7 +13,7 @@ RSpec.describe 'Spree::DigitalAssets write workflows' do
 
   def private_blob(filename = 'manual.pdf')
     ActiveStorage::Blob.create_and_upload!(
-      io: File.open(Spree::Core::Engine.root.join('spec', 'fixtures', 'thinking-cat.jpg')),
+      io: StringIO.new("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF"),
       filename: filename,
       content_type: 'application/pdf',
       service_name: Spree.private_storage_service_name
