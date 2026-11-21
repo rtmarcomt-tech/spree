@@ -188,7 +188,7 @@ RSpec.describe 'seller requirement kinds', type: :model do
   end
 
   describe Spree::SellerRequirements::Policy do
-    let(:requirement) { store.seller_requirements.find_by(type: 'Spree::SellerRequirements::Policy') || create(:policy_requirement, store: store) }
+    let(:requirement) { create(:policy_requirement, store: store) }
 
     it 'is met once the seller publishes the document it names' do
       expect(requirement.satisfied?(seller)).to be false
