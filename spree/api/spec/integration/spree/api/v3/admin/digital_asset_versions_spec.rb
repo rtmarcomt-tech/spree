@@ -10,8 +10,7 @@ RSpec.describe 'Admin Digital Asset Versions API', type: :request, swagger_doc: 
   let!(:digital_asset) { create(:digital_asset, variant: product.default_variant) }
   let!(:version) do
     blob = digital_asset.attachment.blob
-    create(
-      :digital_asset_version,
+    Spree::DigitalAssetVersion.create!(
       store: store,
       digital_asset: digital_asset,
       version_number: 1,
@@ -36,7 +35,7 @@ RSpec.describe 'Admin Digital Asset Versions API', type: :request, swagger_doc: 
 
       parameter name: 'x-spree-api-key', in: :header, type: :string, required: true
       parameter name: :Authorization, in: :header, type: :string, required: true
-      request_body_for
+      request_body_for(reason_code: 'policy_violation', notes: 'Violates marketplace rules')
 
       let(:'x-spree-api-key') { secret_api_key.plaintext_token }
       let(:id) { version.prefixed_id }
