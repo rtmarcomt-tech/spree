@@ -120,19 +120,14 @@ function CreatorMediaReviewPage() {
 
   const queue = useQuery({
     queryKey: ['digital-asset-versions', 'pending'],
-    queryFn: () => adminClient.digitalAssetVersions.list({ status: 'pending' }),
+    queryFn: () => adminClient.digitalAssetVersions.list({ status: 'published' }),
   })
 
   const decision = useMutation({
-    mutationFn: async ({ id, approve }: { id: string; approve: boolean }) => {
-      if (approve) {
-        return adminClient.digitalAssetVersions.approve(id, { notes: notes || undefined })
-      }
-      return adminClient.digitalAssetVersions.reject(id, {
-        reason_code: reasonCode.trim(),
-        notes: notes.trim() || undefined,
-      })
-    },
+    mutationFn: async ({ id }: { id: string }) => adminClient.digitalAssetVersions.remove(id, {
+      reason_code: reasonCode.trim(),
+      notes: notes.trim() || undefined,
+    }),
     onSuccess: async () => {
       setSelectedId(null)
       setNotes('')
@@ -145,16 +140,16 @@ function CreatorMediaReviewPage() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Creator content review</h1>
+        <h1 className="text-2xl font-semibold">Creator publications</h1>
         <p className="text-sm text-muted-foreground">
-          Review each uploaded revision before it can appear in the storefront or be purchased.
+          Published creator content. Remove a publication only when it breaches the platform rules.
         </p>
       </header>
 
       {queue.isError && (
         <Alert variant="destructive">
           <AlertDescription>
-            Could not load the moderation queue. Check your permissions and try again.
+            Could not load the publication list. Check your permissions and try again.
           </AlertDescription>
         </Alert>
       )}
@@ -162,7 +157,7 @@ function CreatorMediaReviewPage() {
       {decision.isError && (
         <Alert variant="destructive">
           <AlertDescription>
-            {(decision.error as Error).message || 'The moderation decision failed.'}
+            {(decision.error as Error).message || 'The removal failed.'}
           </AlertDescription>
         </Alert>
       )}
@@ -172,7 +167,7 @@ function CreatorMediaReviewPage() {
       ) : items.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            There are no uploads waiting for review.
+            There are no published creator files.
           </CardContent>
         </Card>
       ) : (
@@ -195,7 +190,7 @@ function CreatorMediaReviewPage() {
 
                 {selectedId === item.id && (
                   <div className="grid gap-2 rounded-md border p-3">
-                    <Label htmlFor={`reason-${item.id}`}>Rejection reason code</Label>
+                    <Label htmlFor={`reason-${item.id}`}>Removal reason code</Label>
                     <Input
                       id={`reason-${item.id}`}
                       value={reasonCode}
@@ -212,9 +207,9 @@ function CreatorMediaReviewPage() {
                       <Button
                         variant="destructive"
                         disabled={!reasonCode.trim() || decision.isPending}
-                        onClick={() => decision.mutate({ id: item.id, approve: false })}
+                        onClick={() => decision.mutate({ id: item.id })}
                       >
-                        Confirm rejection
+                        Confirm removal
                       </Button>
                       <Button
                         variant="outline"
@@ -228,12 +223,7 @@ function CreatorMediaReviewPage() {
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    disabled={decision.isPending || selectedId !== null}
-                    onClick={() => decision.mutate({ id: item.id, approve: true })}
-                  >
-                    Approve revision
-                  </Button>
+                  <p className="text-sm text-muted-foreground">Status: {item.status}</p>
                   <Button
                     variant="destructive"
                     disabled={decision.isPending || selectedId !== null}
@@ -243,7 +233,7 @@ function CreatorMediaReviewPage() {
                       setNotes('')
                     }}
                   >
-                    Reject revision
+                    Remove publication
                   </Button>
                 </div>
               </CardContent>
