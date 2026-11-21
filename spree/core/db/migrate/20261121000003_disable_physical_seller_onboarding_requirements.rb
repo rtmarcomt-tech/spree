@@ -17,6 +17,19 @@ class DisablePhysicalSellerOnboardingRequirements < ActiveRecord::Migration[8.1]
       SET active = #{connection.adapter_name.downcase.include?('postgres') ? 'FALSE' : '0'}
       WHERE type IN (#{PHYSICAL_REQUIREMENTS.map { |type| connection.quote(type) }.join(', ')})
     SQL
+
+    # Also guard stores provisioned after the one-off migration has run. The
+    # onboarding evaluator treats inactive rows as absent, regardless of their
+    # required flag, preserving audit/history while removing physical steps.
+    store_ids = select_values('SELECT id FROM spree_stores')
+    store_ids.each do |store_id|
+      execute <<~SQL
+        UPDATE spree_seller_requirements
+        SET active = #{connection.adapter_name.downcase.include?('postgres') ? 'FALSE' : '0'}
+        WHERE store_id = #{connection.quote(store_id)}
+          AND type IN (#{PHYSICAL_REQUIREMENTS.map { |type| connection.quote(type) }.join(', ')})
+      SQL
+    end
   end
 
   def down
