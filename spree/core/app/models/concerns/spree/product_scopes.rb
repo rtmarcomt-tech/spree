@@ -312,7 +312,7 @@ module Spree
       # deliberately a relation-level predicate so IDs, slugs, pagination and
       # search-provider results all share the same seller/media eligibility.
       # A product must have at least one digital asset; every attached asset
-      # must have a current, explicitly approved revision.
+      # must have a current, published revision.
       def self.digital_marketplace_visible
         sellable_sellers = Spree::Seller.sellable.select(:id)
         latest_published_versions = Spree::DigitalAssetVersion.
